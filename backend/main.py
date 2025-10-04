@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import math
 import json
-from physics import calculate_impact
+from physics import calculate_impact, calculate_deflection
 
 # Load environment variables
 load_dotenv()
@@ -605,6 +605,42 @@ async def simulate_real_impact(request: SimulateRealImpactRequest):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to process asteroid data: {str(e)}"
         )
+
+
+@app.get("/api/deflection/calculate")
+async def calculate_deflection_endpoint(
+    size_m: float,
+    mass_kg: float,
+    velocity_km_s: float,
+    time_to_impact_days: float,
+    method: str,
+    spacecraft_mass_kg: float = 1000,
+    spacecraft_velocity_km_s: float = 10.0
+):
+    """
+    Calculate asteroid deflection using various mitigation strategies.
+    
+    Args:
+        size_m: Asteroid diameter in meters
+        mass_kg: Asteroid mass in kg
+        velocity_km_s: Current velocity in km/s
+        time_to_impact_days: Days until impact
+        method: "kinetic_impactor", "gravity_tractor", or "nuclear"
+        spacecraft_mass_kg: Spacecraft mass (for kinetic/nuclear methods)
+        spacecraft_velocity_km_s: Spacecraft velocity (for kinetic impactor)
+    """
+    
+    result = calculate_deflection(
+        asteroid_size_m=size_m,
+        asteroid_mass_kg=mass_kg,
+        asteroid_velocity_km_s=velocity_km_s,
+        time_to_impact_days=time_to_impact_days,
+        deflection_method=method,
+        spacecraft_mass_kg=spacecraft_mass_kg,
+        spacecraft_velocity_km_s=spacecraft_velocity_km_s
+    )
+    
+    return result
 
 
 if __name__ == "__main__":

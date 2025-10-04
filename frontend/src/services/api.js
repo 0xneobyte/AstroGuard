@@ -46,4 +46,25 @@ export const browseAsteroids = async (page = 0, size = 20) => {
   return response.data;
 };
 
+// Calculate asteroid deflection using mitigation strategies
+export const calculateDeflection = async (deflectionData) => {
+  try {
+    const params = new URLSearchParams({
+      size_m: deflectionData.size_m,
+      mass_kg: deflectionData.mass_kg,
+      velocity_km_s: deflectionData.velocity_km_s,
+      time_to_impact_days: deflectionData.time_to_impact_days,
+      method: deflectionData.method,
+      spacecraft_mass_kg: deflectionData.spacecraft_mass_kg || 1000,
+      spacecraft_velocity_km_s: deflectionData.spacecraft_velocity_km_s || 10.0,
+    });
+
+    const response = await api.get(`/api/deflection/calculate?${params}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error calculating deflection:", error);
+    throw error;
+  }
+};
+
 export default api;

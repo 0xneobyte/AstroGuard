@@ -1,6 +1,14 @@
 import { useEffect, useRef, useState } from "react";
 import useStore from "../store/useStore";
-import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Clock,
+  Rocket,
+  Shield,
+  Zap,
+} from "lucide-react";
+import { calculateDeflection } from "../services/api";
 
 const SpacekitView = () => {
   const containerRef = useRef(null);
@@ -8,6 +16,8 @@ const SpacekitView = () => {
   const currentAsteroidRef = useRef(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [statusMessage, setStatusMessage] = useState("Initializing...");
+  const [deflectionResults, setDeflectionResults] = useState(null);
+  const [showDeflectionPanel, setShowDeflectionPanel] = useState(false);
   const mode = useStore((state) => state.mode);
 
   const selectedAsteroid = useStore((state) => state.selectedAsteroid);
@@ -330,6 +340,76 @@ const SpacekitView = () => {
     }
   };
 
+  const handleDeflectionCalculation = async (method) => {
+    if (!selectedAsteroid) {
+      alert("Please select an asteroid first");
+      return;
+    }
+
+    try {
+      // Calculate asteroid mass from size
+      const radius_m = selectedAsteroid.average_diameter_m / 2;
+      const volume_m3 = (4 / 3) * Math.PI * Math.pow(radius_m, 3);
+      const density_kg_m3 = 3000; // Assume rocky asteroid density
+      const mass_kg = volume_m3 * density_kg_m3;
+
+      // Calculate actual time to impact from close approach date
+      const closeApproachDate =
+        selectedAsteroid.close_approach_data[0]?.close_approach_date;
+      let timeToImpactDays = 365; // Default fallback
+
+      if (closeApproachDate) {
+        // Parse the date string (format: "2025-10-09")
+        const [year, month, day] = closeApproachDate.split("-").map(Number);
+        const impactDate = new Date(year, month - 1, day); // month is 0-indexed
+
+        // Get current date (or use the simulation date if set)
+        const currentDate = vizRef.current?.getDate() || new Date();
+
+        const timeDiff = impactDate.getTime() - currentDate.getTime();
+        timeToImpactDays = Math.max(
+          0,
+          Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
+        );
+
+        console.log("📅 Date calculation:", {
+          closeApproachDate,
+          impactDate: impactDate.toISOString().split("T")[0],
+          currentDate: currentDate.toISOString().split("T")[0],
+          timeDiffDays: timeToImpactDays,
+        });
+      }
+
+      const deflectionData = {
+        size_m: selectedAsteroid.average_diameter_m,
+        mass_kg: mass_kg,
+        velocity_km_s:
+          selectedAsteroid.close_approach_data[0]?.relative_velocity_km_s || 10,
+        time_to_impact_days: timeToImpactDays,
+        method: method,
+      };
+
+      const result = await calculateDeflection(deflectionData);
+
+      // Add warning for small asteroids with nuclear deflection
+      if (method === "nuclear" && selectedAsteroid.average_diameter_m < 50) {
+        result.warning =
+          "⚠️ Nuclear deflection may be excessive for small asteroids. Consider kinetic impactor instead.";
+      }
+
+      // Add time warning for very short timeframes
+      if (timeToImpactDays < 30) {
+        result.timeWarning = `⚠️ Only ${timeToImpactDays} days until impact - very limited time for mission preparation!`;
+      }
+
+      setDeflectionResults(result);
+      setShowDeflectionPanel(true);
+    } catch (error) {
+      console.error("Error calculating deflection:", error);
+      alert("Error calculating deflection. Please try again.");
+    }
+  };
+
   return (
     <div style={{ width: "100%", height: "100%", position: "relative" }}>
       <div
@@ -631,6 +711,289 @@ const SpacekitView = () => {
           </div>
         </div>
       </div>
+
+      {/* Mitigation Strategies Panel (Bottom Left) */}
+      <div
+        style={{
+          position: "absolute",
+          bottom: "1rem",
+          left: "1rem",
+          background: "#18181b",
+          border: "1px solid #27272a",
+          padding: "1rem",
+          borderRadius: "0.5rem",
+          fontSize: "0.875rem",
+          fontFamily: "'Poppins', system-ui, -apple-system, sans-serif",
+          zIndex: 100,
+          minWidth: "280px",
+          color: "#fafafa",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        <h4
+          style={{
+            margin: "0 0 0.75rem 0",
+            fontSize: "0.875rem",
+            color: "#fafafa",
+            fontWeight: "600",
+            display: "flex",
+            alignItems: "center",
+            gap: "0.5rem",
+          }}
+        >
+          <Shield size={16} />
+          Mitigation Strategies
+        </h4>
+
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
+          <button
+            onClick={() => handleDeflectionCalculation("kinetic_impactor")}
+            style={{
+              padding: "0.5rem 0.75rem",
+              background: "transparent",
+              border: "1px solid #27272a",
+              borderRadius: "0.375rem",
+              cursor: "pointer",
+              fontSize: "0.813rem",
+              color: "#a1a1aa",
+              transition: "all 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "#27272a";
+              e.target.style.color = "#fafafa";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "transparent";
+              e.target.style.color = "#a1a1aa";
+            }}
+          >
+            <Rocket size={14} />
+            <span>Kinetic Impactor</span>
+          </button>
+
+          <button
+            onClick={() => handleDeflectionCalculation("gravity_tractor")}
+            style={{
+              padding: "0.5rem 0.75rem",
+              background: "transparent",
+              border: "1px solid #27272a",
+              borderRadius: "0.375rem",
+              cursor: "pointer",
+              fontSize: "0.813rem",
+              color: "#a1a1aa",
+              transition: "all 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "#27272a";
+              e.target.style.color = "#fafafa";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "transparent";
+              e.target.style.color = "#a1a1aa";
+            }}
+          >
+            <Shield size={14} />
+            <span>Gravity Tractor</span>
+          </button>
+
+          <button
+            onClick={() => handleDeflectionCalculation("nuclear")}
+            style={{
+              padding: "0.5rem 0.75rem",
+              background: "transparent",
+              border: "1px solid #27272a",
+              borderRadius: "0.375rem",
+              cursor: "pointer",
+              fontSize: "0.813rem",
+              color: "#a1a1aa",
+              transition: "all 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "#27272a";
+              e.target.style.color = "#fafafa";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "transparent";
+              e.target.style.color = "#a1a1aa";
+            }}
+          >
+            <Zap size={14} />
+            <span>Nuclear Deflection</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Deflection Results Panel (Bottom Right) */}
+      {showDeflectionPanel && deflectionResults && (
+        <div
+          style={{
+            position: "absolute",
+            bottom: "1rem",
+            right: "1rem",
+            background: "#18181b",
+            border: "1px solid #27272a",
+            padding: "1rem",
+            borderRadius: "0.5rem",
+            fontSize: "0.875rem",
+            fontFamily: "'Poppins', system-ui, -apple-system, sans-serif",
+            zIndex: 100,
+            minWidth: "320px",
+            maxWidth: "400px",
+            color: "#fafafa",
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "0.75rem",
+            }}
+          >
+            <h4
+              style={{
+                margin: 0,
+                fontSize: "0.875rem",
+                color: "#fafafa",
+                fontWeight: "600",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.5rem",
+              }}
+            >
+              <Shield size={16} />
+              {deflectionResults.method}
+            </h4>
+            <button
+              onClick={() => setShowDeflectionPanel(false)}
+              style={{
+                background: "transparent",
+                border: "none",
+                color: "#a1a1aa",
+                cursor: "pointer",
+                fontSize: "1.2rem",
+                padding: "0.25rem",
+              }}
+            >
+              ×
+            </button>
+          </div>
+
+          <div
+            style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#a1a1aa" }}>Effectiveness:</span>
+              <span
+                style={{
+                  color:
+                    deflectionResults.effectiveness > 70
+                      ? "#22c55e"
+                      : deflectionResults.effectiveness > 40
+                      ? "#f59e0b"
+                      : "#ef4444",
+                }}
+              >
+                {deflectionResults.effectiveness}%
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#a1a1aa" }}>Velocity Change:</span>
+              <span style={{ color: "#fafafa" }}>
+                {deflectionResults.velocity_change_km_s} km/s
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#a1a1aa" }}>Deflection Distance:</span>
+              <span style={{ color: "#fafafa" }}>
+                {deflectionResults.deflection_distance_km.toLocaleString()} km
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#a1a1aa" }}>Time Required:</span>
+              <span style={{ color: "#fafafa" }}>
+                {deflectionResults.time_required_days} days
+              </span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between" }}>
+              <span style={{ color: "#a1a1aa" }}>Success Rate:</span>
+              <span style={{ color: "#fafafa" }}>
+                {deflectionResults.success_probability}%
+              </span>
+            </div>
+
+            <div
+              style={{
+                marginTop: "0.75rem",
+                padding: "0.5rem",
+                background: "#27272a",
+                borderRadius: "0.375rem",
+                fontSize: "0.813rem",
+                color: "#fafafa",
+              }}
+            >
+              <strong>Status:</strong> {deflectionResults.status}
+            </div>
+
+            <div
+              style={{
+                marginTop: "0.5rem",
+                padding: "0.5rem",
+                background: "#27272a",
+                borderRadius: "0.375rem",
+                fontSize: "0.813rem",
+                color: "#a1a1aa",
+              }}
+            >
+              {deflectionResults.description}
+            </div>
+
+            {deflectionResults.warning && (
+              <div
+                style={{
+                  marginTop: "0.5rem",
+                  padding: "0.5rem",
+                  background: "#7f1d1d",
+                  borderRadius: "0.375rem",
+                  fontSize: "0.813rem",
+                  color: "#fca5a5",
+                  border: "1px solid #991b1b",
+                }}
+              >
+                {deflectionResults.warning}
+              </div>
+            )}
+
+            {deflectionResults.timeWarning && (
+              <div
+                style={{
+                  marginTop: "0.5rem",
+                  padding: "0.5rem",
+                  background: "#92400e",
+                  borderRadius: "0.375rem",
+                  fontSize: "0.813rem",
+                  color: "#fcd34d",
+                  border: "1px solid #78350f",
+                }}
+              >
+                {deflectionResults.timeWarning}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
