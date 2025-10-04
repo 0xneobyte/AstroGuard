@@ -64,6 +64,11 @@ class OrbitalData(BaseModel):
     perihelion_distance_au: Optional[float] = None
     aphelion_distance_au: Optional[float] = None
     orbit_class_type: Optional[str] = None
+    # Additional fields for Spacekit visualization
+    ascending_node_longitude_deg: Optional[float] = None
+    perihelion_argument_deg: Optional[float] = None
+    mean_anomaly_deg: Optional[float] = None
+    epoch_osculation: Optional[float] = None
 
 
 class AsteroidThreat(BaseModel):
@@ -211,13 +216,17 @@ async def get_current_threats():
                 od = asteroid.get("orbital_data")
                 if od and isinstance(od, dict) and od:  # Check it's not empty
                     orbital_data = {
-                        "semi_major_axis_au": float(od.get("semi_major_axis")) if od.get("semi_major_axis") else None,
-                        "eccentricity": float(od.get("eccentricity")) if od.get("eccentricity") else None,
-                        "inclination_deg": float(od.get("inclination")) if od.get("inclination") else None,
-                        "orbital_period_days": float(od.get("orbital_period")) if od.get("orbital_period") else None,
-                        "perihelion_distance_au": float(od.get("perihelion_distance")) if od.get("perihelion_distance") else None,
-                        "aphelion_distance_au": float(od.get("aphelion_distance")) if od.get("aphelion_distance") else None,
-                        "orbit_class_type": od.get("orbit_class", {}).get("orbit_class_type") if "orbit_class" in od else None
+                        "semi_major_axis_au": float(od["semi_major_axis"]) if "semi_major_axis" in od and od["semi_major_axis"] is not None else None,
+                        "eccentricity": float(od["eccentricity"]) if "eccentricity" in od and od["eccentricity"] is not None else None,
+                        "inclination_deg": float(od["inclination"]) if "inclination" in od and od["inclination"] is not None else None,
+                        "orbital_period_days": float(od["orbital_period"]) if "orbital_period" in od and od["orbital_period"] is not None else None,
+                        "perihelion_distance_au": float(od["perihelion_distance"]) if "perihelion_distance" in od and od["perihelion_distance"] is not None else None,
+                        "aphelion_distance_au": float(od["aphelion_distance"]) if "aphelion_distance" in od and od["aphelion_distance"] is not None else None,
+                        "orbit_class_type": od.get("orbit_class", {}).get("orbit_class_type"),
+                        "ascending_node_longitude_deg": float(od["ascending_node_longitude"]) if "ascending_node_longitude" in od and od["ascending_node_longitude"] is not None else None,
+                        "perihelion_argument_deg": float(od["perihelion_argument"]) if "perihelion_argument" in od and od["perihelion_argument"] is not None else None,
+                        "mean_anomaly_deg": float(od["mean_anomaly"]) if "mean_anomaly" in od and od["mean_anomaly"] is not None else None,
+                        "epoch_osculation": float(od["epoch_osculation"]) if "epoch_osculation" in od and od["epoch_osculation"] is not None else None
                     }
 
                 asteroid_data = {
@@ -327,13 +336,17 @@ async def get_asteroid_details(asteroid_id: str):
         od = asteroid.get("orbital_data")
         if od and isinstance(od, dict) and od:
             orbital_data = {
-                "semi_major_axis_au": float(od.get("semi_major_axis")) if od.get("semi_major_axis") else None,
-                "eccentricity": float(od.get("eccentricity")) if od.get("eccentricity") else None,
-                "inclination_deg": float(od.get("inclination")) if od.get("inclination") else None,
-                "orbital_period_days": float(od.get("orbital_period")) if od.get("orbital_period") else None,
-                "perihelion_distance_au": float(od.get("perihelion_distance")) if od.get("perihelion_distance") else None,
-                "aphelion_distance_au": float(od.get("aphelion_distance")) if od.get("aphelion_distance") else None,
-                "orbit_class_type": od.get("orbit_class", {}).get("orbit_class_type") if "orbit_class" in od else None
+                "semi_major_axis_au": float(od["semi_major_axis"]) if "semi_major_axis" in od and od["semi_major_axis"] is not None else None,
+                "eccentricity": float(od["eccentricity"]) if "eccentricity" in od and od["eccentricity"] is not None else None,
+                "inclination_deg": float(od["inclination"]) if "inclination" in od and od["inclination"] is not None else None,
+                "orbital_period_days": float(od["orbital_period"]) if "orbital_period" in od and od["orbital_period"] is not None else None,
+                "perihelion_distance_au": float(od["perihelion_distance"]) if "perihelion_distance" in od and od["perihelion_distance"] is not None else None,
+                "aphelion_distance_au": float(od["aphelion_distance"]) if "aphelion_distance" in od and od["aphelion_distance"] is not None else None,
+                "orbit_class_type": od.get("orbit_class", {}).get("orbit_class_type"),
+                "ascending_node_longitude_deg": float(od["ascending_node_longitude"]) if "ascending_node_longitude" in od and od["ascending_node_longitude"] is not None else None,
+                "perihelion_argument_deg": float(od["perihelion_argument"]) if "perihelion_argument" in od and od["perihelion_argument"] is not None else None,
+                "mean_anomaly_deg": float(od["mean_anomaly"]) if "mean_anomaly" in od and od["mean_anomaly"] is not None else None,
+                "epoch_osculation": float(od["epoch_osculation"]) if "epoch_osculation" in od and od["epoch_osculation"] is not None else None
             }
 
         result = {
@@ -440,13 +453,17 @@ async def browse_asteroids(page: int = 0, size: int = 20):
             od = asteroid.get("orbital_data")
             if od and isinstance(od, dict) and od:
                 orbital_data = {
-                    "semi_major_axis_au": float(od.get("semi_major_axis")) if od.get("semi_major_axis") else None,
-                    "eccentricity": float(od.get("eccentricity")) if od.get("eccentricity") else None,
-                    "inclination_deg": float(od.get("inclination")) if od.get("inclination") else None,
-                    "orbital_period_days": float(od.get("orbital_period")) if od.get("orbital_period") else None,
-                    "perihelion_distance_au": float(od.get("perihelion_distance")) if od.get("perihelion_distance") else None,
-                    "aphelion_distance_au": float(od.get("aphelion_distance")) if od.get("aphelion_distance") else None,
-                    "orbit_class_type": od.get("orbit_class", {}).get("orbit_class_type") if "orbit_class" in od else None
+                    "semi_major_axis_au": float(od["semi_major_axis"]) if "semi_major_axis" in od and od["semi_major_axis"] is not None else None,
+                    "eccentricity": float(od["eccentricity"]) if "eccentricity" in od and od["eccentricity"] is not None else None,
+                    "inclination_deg": float(od["inclination"]) if "inclination" in od and od["inclination"] is not None else None,
+                    "orbital_period_days": float(od["orbital_period"]) if "orbital_period" in od and od["orbital_period"] is not None else None,
+                    "perihelion_distance_au": float(od["perihelion_distance"]) if "perihelion_distance" in od and od["perihelion_distance"] is not None else None,
+                    "aphelion_distance_au": float(od["aphelion_distance"]) if "aphelion_distance" in od and od["aphelion_distance"] is not None else None,
+                    "orbit_class_type": od.get("orbit_class", {}).get("orbit_class_type"),
+                    "ascending_node_longitude_deg": float(od["ascending_node_longitude"]) if "ascending_node_longitude" in od and od["ascending_node_longitude"] is not None else None,
+                    "perihelion_argument_deg": float(od["perihelion_argument"]) if "perihelion_argument" in od and od["perihelion_argument"] is not None else None,
+                    "mean_anomaly_deg": float(od["mean_anomaly"]) if "mean_anomaly" in od and od["mean_anomaly"] is not None else None,
+                    "epoch_osculation": float(od["epoch_osculation"]) if "epoch_osculation" in od and od["epoch_osculation"] is not None else None
                 }
 
             asteroids.append({
