@@ -164,24 +164,29 @@
 }
 
 .detail-icon {
-  font-size: 0.75rem;
-  width: 1rem;
-  text-align: center;
+  color: #a1a1aa;
+  flex-shrink: 0;
 }
 
 .detail-date {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
   font-size: 0.75rem;
   color: #71717a;
   margin-left: auto;
 }
 
+.date-icon {
+  color: #71717a;
+  flex-shrink: 0;
+}
+
 .hazard-badge {
   background: #7f1d1d;
   color: #fca5a5;
-  padding: 0.125rem 0.375rem;
+  padding: 0.25rem;
   border-radius: 0.25rem;
-  font-size: 0.75rem;
-  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;

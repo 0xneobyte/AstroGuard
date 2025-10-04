@@ -6,6 +6,7 @@ import {
   calculateImpact,
   simulateRealImpact,
 } from "../services/api";
+import { Ruler, Zap, Calendar, AlertTriangle } from "lucide-react";
 import "./Sidebar.css";
 
 const Sidebar = () => {
@@ -115,7 +116,7 @@ const Sidebar = () => {
 
       {/* Data Source Info Panel */}
       <div className="info-panel">
-        <h4>📊 Data Sources</h4>
+        <h4>Data Sources</h4>
         {mode === "THREATS" ? (
           <div className="info-content">
             <div className="info-item">
@@ -178,22 +179,25 @@ const Sidebar = () => {
                 <div className="asteroid-header">
                   <div className="asteroid-name">{asteroid.name}</div>
                   {asteroid.is_potentially_hazardous && (
-                    <div className="hazard-badge">⚠️</div>
+                    <div className="hazard-badge">
+                      <AlertTriangle size={12} />
+                    </div>
                   )}
                 </div>
                 <div className="asteroid-details">
                   <span className="detail-item">
-                    <span className="detail-icon">📏</span>
+                    <Ruler size={14} className="detail-icon" />
                     {Math.round(asteroid.average_diameter_m)}m
                   </span>
                   <span className="detail-item">
-                    <span className="detail-icon">⚡</span>
+                    <Zap size={14} className="detail-icon" />
                     {asteroid.close_approach_data[0]?.relative_velocity_km_s.toFixed(
                       1
                     )}{" "}
                     km/s
                   </span>
                   <span className="detail-date">
+                    <Calendar size={12} className="date-icon" />
                     {asteroid.close_approach_data[0]?.close_approach_date}
                   </span>
                 </div>

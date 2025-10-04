@@ -12,7 +12,7 @@ function App() {
       {/* Header */}
       <header className="app-header">
         <div className="header-left">
-          <h1 className="app-title">🌌 ASTROGUARD</h1>
+          <h1 className="app-title">ASTROGUARD</h1>
           <span className="app-subtitle">Asteroid Impact Simulator</span>
         </div>
         <nav className="view-tabs">

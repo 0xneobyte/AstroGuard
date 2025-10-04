@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import useStore from "../store/useStore";
+import { ChevronLeft, ChevronRight, Clock } from "lucide-react";
 
 const SpacekitView = () => {
   const containerRef = useRef(null);
@@ -399,7 +400,9 @@ const SpacekitView = () => {
               e.target.style.color = "#a1a1aa";
             }}
           >
-            <span>◀◀</span> Slower
+            <ChevronLeft size={14} />
+            <ChevronLeft size={14} />
+            <span>Slower</span>
           </button>
           <button
             onClick={handleFaster}
@@ -425,7 +428,9 @@ const SpacekitView = () => {
               e.target.style.color = "#a1a1aa";
             }}
           >
-            Faster <span>▶▶</span>
+            <span>Faster</span>
+            <ChevronRight size={14} />
+            <ChevronRight size={14} />
           </button>
           <button
             onClick={handleSetTime}
@@ -448,7 +453,8 @@ const SpacekitView = () => {
               e.target.style.color = "#a1a1aa";
             }}
           >
-            Set Time
+            <Clock size={14} />
+            <span>Set Time</span>
           </button>
         </div>
 
