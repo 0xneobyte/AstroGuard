@@ -21,11 +21,11 @@ const SpacekitView = () => {
     setStatusMessage("Starting simulation...");
 
     try {
-      // Exact configuration from NASA example
+      // Configuration based on NASA example but with current date
       const viz = new window.Spacekit.Simulation(containerRef.current, {
         basePath: "https://typpo.github.io/spacekit/src",
         unitsPerAu: 10.0,
-        jd: 2443568.0,
+        startDate: Date.now(), // Use current date instead of 1978!
         jdPerSecond: 1.0,
         camera: {
           enableDrift: false,
