@@ -335,68 +335,117 @@ const SpacekitView = () => {
         style={{ width: "100%", height: "100%", background: "#000" }}
       />
 
-      {/* Control Panel (NASA style) */}
+      {/* Control Panel (shadcn style) */}
       <div
         style={{
           position: "absolute",
-          top: "10px",
-          right: "10px",
-          background: "rgba(204, 204, 204, 0.95)",
-          padding: "1em",
-          borderRadius: "4px",
-          fontSize: "14px",
-          fontFamily: "sans-serif",
+          top: "1rem",
+          right: "1rem",
+          background: "#18181b",
+          border: "1px solid #27272a",
+          padding: "1rem",
+          borderRadius: "0.5rem",
+          fontSize: "0.875rem",
+          fontFamily: "'Poppins', system-ui, -apple-system, sans-serif",
           zIndex: 100,
-          minWidth: "220px",
+          minWidth: "240px",
+          color: "#fafafa",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
         }}
       >
-        <div style={{ marginBottom: "10px" }}>
-          <strong>Current Date: </strong>
-          <span id="current-date">
+        <div style={{ marginBottom: "1rem" }}>
+          <div
+            style={{
+              fontWeight: "600",
+              color: "#fafafa",
+              marginBottom: "0.25rem",
+            }}
+          >
+            Current Date
+          </div>
+          <div style={{ color: "#a1a1aa", fontSize: "0.813rem" }}>
             {currentDate.toLocaleDateString("en-US", {
               year: "numeric",
               month: "short",
               day: "numeric",
             })}
-          </span>
+          </div>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "5px" }}>
+        <div
+          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
+        >
           <button
             onClick={handleSlower}
             style={{
-              padding: "6px 12px",
-              background: "#fff",
-              border: "1px solid #999",
-              borderRadius: "3px",
+              padding: "0.5rem 0.75rem",
+              background: "transparent",
+              border: "1px solid #27272a",
+              borderRadius: "0.375rem",
               cursor: "pointer",
-              fontSize: "13px",
+              fontSize: "0.813rem",
+              color: "#a1a1aa",
+              transition: "all 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "#27272a";
+              e.target.style.color = "#fafafa";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "transparent";
+              e.target.style.color = "#a1a1aa";
             }}
           >
-            ◀◀ Slower
+            <span>◀◀</span> Slower
           </button>
           <button
             onClick={handleFaster}
             style={{
-              padding: "6px 12px",
-              background: "#fff",
-              border: "1px solid #999",
-              borderRadius: "3px",
+              padding: "0.5rem 0.75rem",
+              background: "transparent",
+              border: "1px solid #27272a",
+              borderRadius: "0.375rem",
               cursor: "pointer",
-              fontSize: "13px",
+              fontSize: "0.813rem",
+              color: "#a1a1aa",
+              transition: "all 0.15s ease",
+              display: "flex",
+              alignItems: "center",
+              gap: "0.5rem",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "#27272a";
+              e.target.style.color = "#fafafa";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "transparent";
+              e.target.style.color = "#a1a1aa";
             }}
           >
-            Faster ▶▶
+            Faster <span>▶▶</span>
           </button>
           <button
             onClick={handleSetTime}
             style={{
-              padding: "6px 12px",
-              background: "#fff",
-              border: "1px solid #999",
-              borderRadius: "3px",
+              padding: "0.5rem 0.75rem",
+              background: "transparent",
+              border: "1px solid #27272a",
+              borderRadius: "0.375rem",
               cursor: "pointer",
-              fontSize: "13px",
+              fontSize: "0.813rem",
+              color: "#a1a1aa",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.target.style.background = "#27272a";
+              e.target.style.color = "#fafafa";
+            }}
+            onMouseLeave={(e) => {
+              e.target.style.background = "transparent";
+              e.target.style.color = "#a1a1aa";
             }}
           >
             Set Time
@@ -405,15 +454,24 @@ const SpacekitView = () => {
 
         <div
           style={{
-            marginTop: "12px",
-            paddingTop: "8px",
-            borderTop: "1px solid #999",
-            fontSize: "11px",
-            color: "#333",
+            marginTop: "1rem",
+            paddingTop: "0.75rem",
+            borderTop: "1px solid #27272a",
+            fontSize: "0.813rem",
           }}
         >
-          <strong>Status:</strong>
-          <div style={{ marginTop: "4px", color: "#666" }}>{statusMessage}</div>
+          <div
+            style={{
+              fontWeight: "600",
+              color: "#fafafa",
+              marginBottom: "0.25rem",
+            }}
+          >
+            Status
+          </div>
+          <div style={{ color: "#a1a1aa", fontSize: "0.75rem" }}>
+            {statusMessage}
+          </div>
         </div>
       </div>
     </div>
