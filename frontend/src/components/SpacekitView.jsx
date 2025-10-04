@@ -23,38 +23,29 @@ const SpacekitView = () => {
   const selectedAsteroid = useStore((state) => state.selectedAsteroid);
   const impactLocation = useStore((state) => state.impactLocation);
 
-  // Initialize Spacekit - Exact NASA basic_asteroid_earth_flyby style
   useEffect(() => {
     if (!containerRef.current || vizRef.current || !window.Spacekit) return;
 
-    console.log(
-      "🚀 Initializing Spacekit (NASA basic_asteroid_earth_flyby)..."
-    );
     setStatusMessage("Starting simulation...");
 
     try {
-      // Configuration based on NASA example but with current date
       const viz = new window.Spacekit.Simulation(containerRef.current, {
         basePath: "https://typpo.github.io/spacekit/src",
         unitsPerAu: 10.0,
-        startDate: Date.now(), // Use current date instead of 1978!
+        startDate: Date.now(),
         jdPerSecond: 1.0,
         camera: {
           enableDrift: false,
         },
       });
 
-      // Create stars
       viz.createStars();
-
-      // Create Sun
       viz.createObject("sun", window.Spacekit.SpaceObjectPresets.SUN);
 
-      // Create Earth sphere with texture (exactly like NASA example)
       viz.createSphere("earth", {
         textureUrl:
           "https://typpo.github.io/spacekit/examples/basic_asteroid_earth_flyby/earthtexture.jpg",
-        radius: 0.01, // Exaggerated size
+        radius: 0.01,
         ephem: window.Spacekit.EphemPresets.EARTH,
         levelsOfDetail: [
           { radii: 0, segments: 64 },
@@ -77,16 +68,13 @@ const SpacekitView = () => {
         },
       });
 
-      // Add lights (exactly like NASA example)
       viz.createLight([0, 0, 0]);
       viz.createAmbientLight();
 
-      // Update date display
       viz.onTick = () => {
         setCurrentDate(viz.getDate());
       };
 
-      console.log("✅ Spacekit initialized");
       setStatusMessage("Ready - Select an asteroid");
 
       vizRef.current = viz;
@@ -97,31 +85,21 @@ const SpacekitView = () => {
         }
       };
     } catch (error) {
-      console.error("❌ Init error:", error);
       setStatusMessage(`Error: ${error.message}`);
     }
   }, []);
 
-  // Add asteroid when selected (exactly like NASA example)
   useEffect(() => {
     if (!vizRef.current || !selectedAsteroid) return;
 
-    console.log("\n🎯 === ASTEROID SELECTED ===");
-    console.log("Name:", selectedAsteroid.name);
-    console.log("ID:", selectedAsteroid.id);
-
     const viz = vizRef.current;
 
-    // Remove previous asteroid
     if (currentAsteroidRef.current) {
-      console.log("Clearing previous asteroid");
       currentAsteroidRef.current = null;
     }
 
     const orbitalData = selectedAsteroid.orbital_data;
-    console.log("Orbital data:", orbitalData);
 
-    // Check if we have orbital data
     const hasOrbitalData =
       orbitalData &&
       orbitalData.semi_major_axis_au != null &&
@@ -129,12 +107,9 @@ const SpacekitView = () => {
       orbitalData.inclination_deg != null;
 
     if (hasOrbitalData) {
-      // USE REAL ORBITAL DATA
-      console.log("✅ Creating asteroid with REAL orbital data");
       setStatusMessage(`Loading ${selectedAsteroid.name}...`);
 
       try {
-        // Parse orbital elements
         const epoch = orbitalData.epoch_osculation || 2458600.5;
         const a = parseFloat(orbitalData.semi_major_axis_au);
         const e = parseFloat(orbitalData.eccentricity);
@@ -143,21 +118,10 @@ const SpacekitView = () => {
         const w = parseFloat(orbitalData.perihelion_argument_deg || 0);
         const ma = parseFloat(orbitalData.mean_anomaly_deg || 0);
 
-        console.log("Orbital elements:");
-        console.log(`  epoch: ${epoch}`);
-        console.log(`  a: ${a} AU`);
-        console.log(`  e: ${e}`);
-        console.log(`  i: ${i}°`);
-        console.log(`  om: ${om}°`);
-        console.log(`  w: ${w}°`);
-        console.log(`  ma: ${ma}°`);
-
-        // Validate
         if (isNaN(a) || a <= 0 || isNaN(e) || e < 0 || e >= 1 || isNaN(i)) {
           throw new Error(`Invalid orbital elements`);
         }
 
-        // Create Ephem (exactly like NASA example)
         const ephem = new window.Spacekit.Ephem(
           {
             epoch: epoch,
@@ -171,14 +135,10 @@ const SpacekitView = () => {
           "deg"
         );
 
-        console.log("✅ Ephem created");
-
-        // Determine color
         const color = selectedAsteroid.is_potentially_hazardous
           ? 0xff0000
           : 0xffaa00;
 
-        // Create 3D asteroid shape (exactly like NASA example)
         const obj = viz.createShape(`asteroid_${selectedAsteroid.id}`, {
           ephem,
           ecliptic: {
@@ -200,16 +160,12 @@ const SpacekitView = () => {
         });
 
         if (obj) {
-          // Initialize rotation (exactly like NASA example)
           obj.initRotation();
           obj.startRotation();
 
           currentAsteroidRef.current = obj;
-          console.log("✅ Asteroid created successfully!");
 
-          // Follow the object (exactly like NASA example)
           viz.getViewer().followObject(obj, [-0.01, -0.01, 0.01]);
-          console.log("✅ Camera following asteroid");
 
           setStatusMessage(
             `${selectedAsteroid.name} - Orbit active (${a.toFixed(2)} AU)`
@@ -218,13 +174,9 @@ const SpacekitView = () => {
           throw new Error("createShape returned null");
         }
       } catch (error) {
-        console.error("❌ Error creating asteroid:", error);
-        console.error("Stack:", error.stack);
         setStatusMessage(`Error: ${error.message}`);
       }
     } else {
-      // FALLBACK: Use approximate orbital data
-      console.log("⚠️ No orbital data - creating approximate orbit");
       setStatusMessage(`${selectedAsteroid.name} - Approximate orbit`);
 
       try {
@@ -233,14 +185,11 @@ const SpacekitView = () => {
           throw new Error("No approach data available");
         }
 
-        // Estimate orbital elements
         const missDistance_km = approach.miss_distance_km;
         const missDistance_au = missDistance_km / 149597870.7;
         const a = Math.max(0.8, Math.min(3.0, missDistance_au));
         const e = 0.15;
         const i = 10;
-
-        console.log(`Approximate orbit: a=${a.toFixed(2)} AU`);
 
         const ephem = new window.Spacekit.Ephem(
           {
@@ -285,20 +234,17 @@ const SpacekitView = () => {
           );
         }
       } catch (error) {
-        console.error("❌ Fallback failed:", error);
         setStatusMessage(`Error: ${error.message}`);
       }
     }
   }, [selectedAsteroid]);
 
-  // Show impact point
   useEffect(() => {
     if (!vizRef.current || !impactLocation) return;
 
-    console.log("📍 Adding impact point");
     const lat = impactLocation.lat * (Math.PI / 180);
     const lon = impactLocation.lon * (Math.PI / 180);
-    const radius = 0.01; // Earth's radius
+    const radius = 0.01;
 
     const x = radius * Math.cos(lat) * Math.cos(lon);
     const y = radius * Math.cos(lat) * Math.sin(lon);
@@ -311,19 +257,16 @@ const SpacekitView = () => {
     });
   }, [impactLocation]);
 
-  // Simulation controls
   const handleFaster = () => {
     if (!vizRef.current) return;
     const current = vizRef.current.getJdDelta();
     vizRef.current.setJdDelta(current * 1.5);
-    console.log("⚡ Faster");
   };
 
   const handleSlower = () => {
     if (!vizRef.current) return;
     const current = vizRef.current.getJdDelta();
     vizRef.current.setJdDelta(current * 0.5);
-    console.log("⚡ Slower");
   };
 
   const handleSetTime = () => {
@@ -333,7 +276,6 @@ const SpacekitView = () => {
       try {
         const newDate = new Date(dateStr);
         vizRef.current.setDate(newDate);
-        console.log("📅 Date set to:", newDate);
       } catch {
         alert("Invalid date format");
       }
@@ -347,23 +289,19 @@ const SpacekitView = () => {
     }
 
     try {
-      // Calculate asteroid mass from size
       const radius_m = selectedAsteroid.average_diameter_m / 2;
       const volume_m3 = (4 / 3) * Math.PI * Math.pow(radius_m, 3);
-      const density_kg_m3 = 3000; // Assume rocky asteroid density
+      const density_kg_m3 = 3000;
       const mass_kg = volume_m3 * density_kg_m3;
 
-      // Calculate actual time to impact from close approach date
       const closeApproachDate =
         selectedAsteroid.close_approach_data[0]?.close_approach_date;
-      let timeToImpactDays = 365; // Default fallback
+      let timeToImpactDays = 365;
 
       if (closeApproachDate) {
-        // Parse the date string (format: "2025-10-09")
         const [year, month, day] = closeApproachDate.split("-").map(Number);
-        const impactDate = new Date(year, month - 1, day); // month is 0-indexed
+        const impactDate = new Date(year, month - 1, day);
 
-        // Get current date (or use the simulation date if set)
         const currentDate = vizRef.current?.getDate() || new Date();
 
         const timeDiff = impactDate.getTime() - currentDate.getTime();
@@ -371,13 +309,6 @@ const SpacekitView = () => {
           0,
           Math.ceil(timeDiff / (1000 * 60 * 60 * 24))
         );
-
-        console.log("📅 Date calculation:", {
-          closeApproachDate,
-          impactDate: impactDate.toISOString().split("T")[0],
-          currentDate: currentDate.toISOString().split("T")[0],
-          timeDiffDays: timeToImpactDays,
-        });
       }
 
       const deflectionData = {
@@ -391,13 +322,11 @@ const SpacekitView = () => {
 
       const result = await calculateDeflection(deflectionData);
 
-      // Add warning for small asteroids with nuclear deflection
       if (method === "nuclear" && selectedAsteroid.average_diameter_m < 50) {
         result.warning =
           "⚠️ Nuclear deflection may be excessive for small asteroids. Consider kinetic impactor instead.";
       }
 
-      // Add time warning for very short timeframes
       if (timeToImpactDays < 30) {
         result.timeWarning = `⚠️ Only ${timeToImpactDays} days until impact - very limited time for mission preparation!`;
       }
@@ -405,7 +334,6 @@ const SpacekitView = () => {
       setDeflectionResults(result);
       setShowDeflectionPanel(true);
     } catch (error) {
-      console.error("Error calculating deflection:", error);
       alert("Error calculating deflection. Please try again.");
     }
   };

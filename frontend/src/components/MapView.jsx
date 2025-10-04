@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, Circle, Marker, useMapEvents } from 'react-lea
 import useStore from '../store/useStore';
 import 'leaflet/dist/leaflet.css';
 
-// Map click handler component
 function MapClickHandler() {
   const setImpactLocation = useStore((state) => state.setImpactLocation);
 
@@ -19,7 +18,6 @@ function MapClickHandler() {
   return null;
 }
 
-// Damage zones visualization
 function DamageZones() {
   const impactLocation = useStore((state) => state.impactLocation);
   const impactResults = useStore((state) => state.impactResults);
@@ -29,14 +27,13 @@ function DamageZones() {
   const { lat, lon } = impactLocation;
   const zones = impactResults.damage_zones || [];
 
-  // Convert km radius to meters for Leaflet
   return (
     <>
       {zones.map((zone, index) => (
         <Circle
           key={index}
           center={[lat, lon]}
-          radius={zone.radius_km * 1000} // km to meters
+          radius={zone.radius_km * 1000}
           pathOptions={{
             color: zone.color,
             fillColor: zone.color,
@@ -45,7 +42,6 @@ function DamageZones() {
           }}
         />
       ))}
-      {/* Impact marker */}
       <Marker position={[lat, lon]} />
     </>
   );
@@ -70,7 +66,6 @@ const MapView = () => {
         <DamageZones />
       </MapContainer>
 
-      {/* Instruction overlay */}
       {!impactLocation && (
         <div
           style={{

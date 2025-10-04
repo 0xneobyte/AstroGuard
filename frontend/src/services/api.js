@@ -47,7 +47,6 @@ export const browseAsteroids = async (page = 0, size = 20) => {
   return response.data;
 };
 
-// Calculate asteroid deflection using mitigation strategies
 export const calculateDeflection = async (deflectionData) => {
   try {
     const params = new URLSearchParams({
@@ -63,7 +62,6 @@ export const calculateDeflection = async (deflectionData) => {
     const response = await api.get(`/api/deflection/calculate?${params}`);
     return response.data;
   } catch (error) {
-    console.error("Error calculating deflection:", error);
     throw error;
   }
 };

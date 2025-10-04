@@ -36,7 +36,6 @@ const Sidebar = () => {
         setAsteroids(data.asteroids);
       } catch (err) {
         setError("Failed to load asteroid data");
-        console.error(err);
       } finally {
         setLoading(false);
       }
@@ -45,22 +44,18 @@ const Sidebar = () => {
     fetchAsteroids();
   }, []);
 
-  // Handle asteroid selection
   const handleAsteroidClick = async (asteroid) => {
     try {
       setLoading(true);
-      // Fetch full details including orbital data
       const details = await getAsteroidDetails(asteroid.id);
       setSelectedAsteroid(details);
     } catch (err) {
       setError("Failed to load asteroid details");
-      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // Handle impact simulation
   const handleSimulateImpact = async () => {
     if (!impactLocation) {
       alert("Please click on the map to select an impact location");
@@ -72,7 +67,6 @@ const Sidebar = () => {
 
       let results;
       if (mode === "THREATS" && selectedAsteroid) {
-        // Simulate real asteroid impact
         results = await simulateRealImpact(
           selectedAsteroid.id,
           impactLocation.lat,
@@ -80,7 +74,6 @@ const Sidebar = () => {
         );
         setImpactResults(results.simulated_impact);
       } else {
-        // Custom simulator
         results = await calculateImpact({
           ...simulatorParams,
           lat: impactLocation.lat,
@@ -90,7 +83,6 @@ const Sidebar = () => {
       }
     } catch (err) {
       setError("Failed to calculate impact");
-      console.error(err);
     } finally {
       setLoading(false);
     }
