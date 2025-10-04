@@ -2,6 +2,7 @@ import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import SpacekitView from "./components/SpacekitView";
 import MapView from "./components/MapView";
+import { Shield } from "lucide-react";
 import "./App.css";
 
 function App() {
@@ -12,7 +13,10 @@ function App() {
       {/* Header */}
       <header className="app-header">
         <div className="header-left">
-          <h1 className="app-title">ASTROGUARD</h1>
+          <div className="app-brand">
+            <Shield size={28} className="app-icon" />
+            <h1 className="app-title">ASTROGUARD</h1>
+          </div>
           <span className="app-subtitle">Asteroid Impact Simulator</span>
         </div>
         <nav className="view-tabs">

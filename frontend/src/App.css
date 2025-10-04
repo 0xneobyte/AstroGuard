@@ -30,6 +30,17 @@
   gap: 1rem;
 }
 
+.app-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-icon {
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
 .app-title {
   font-size: 1.5rem;
   font-weight: 600;
