@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import useStore from "../store/useStore";
 import {
   getCurrentThreats,
@@ -24,6 +24,7 @@ const Sidebar = () => {
   const setLoading = useStore((state) => state.setLoading);
   const error = useStore((state) => state.error);
   const setError = useStore((state) => state.setError);
+  const [showAll, setShowAll] = useState(false);
 
   // Fetch asteroids on mount
   useEffect(() => {
@@ -159,12 +160,14 @@ const Sidebar = () => {
       {/* Content based on mode */}
       {mode === "THREATS" ? (
         <div className="threats-mode">
-          <h3>Asteroids Approaching Earth (Next 7 Days)</h3>
+          <h2 className="section-heading">
+            Asteroids Approaching Earth (Next 7 Days)
+          </h2>
           {loading && <div className="loading">Loading...</div>}
           {error && <div className="error">{error}</div>}
 
           <div className="asteroid-list">
-            {asteroids.map((asteroid) => (
+            {(showAll ? asteroids : asteroids.slice(0, 4)).map((asteroid) => (
               <div
                 key={asteroid.id}
                 className={`asteroid-card ${
@@ -172,26 +175,40 @@ const Sidebar = () => {
                 } ${selectedAsteroid?.id === asteroid.id ? "selected" : ""}`}
                 onClick={() => handleAsteroidClick(asteroid)}
               >
-                <div className="asteroid-name">{asteroid.name}</div>
-                <div className="asteroid-info">
-                  <span>📏 {Math.round(asteroid.average_diameter_m)}m</span>
-                  <span>
-                    ⚡{" "}
+                <div className="asteroid-header">
+                  <div className="asteroid-name">{asteroid.name}</div>
+                  {asteroid.is_potentially_hazardous && (
+                    <div className="hazard-badge">⚠️</div>
+                  )}
+                </div>
+                <div className="asteroid-details">
+                  <span className="detail-item">
+                    <span className="detail-icon">📏</span>
+                    {Math.round(asteroid.average_diameter_m)}m
+                  </span>
+                  <span className="detail-item">
+                    <span className="detail-icon">⚡</span>
                     {asteroid.close_approach_data[0]?.relative_velocity_km_s.toFixed(
                       1
                     )}{" "}
                     km/s
                   </span>
+                  <span className="detail-date">
+                    {asteroid.close_approach_data[0]?.close_approach_date}
+                  </span>
                 </div>
-                <div className="asteroid-date">
-                  {asteroid.close_approach_data[0]?.close_approach_date}
-                </div>
-                {asteroid.is_potentially_hazardous && (
-                  <div className="hazard-badge">⚠️ HAZARDOUS</div>
-                )}
               </div>
             ))}
           </div>
+
+          {asteroids.length > 4 && (
+            <button
+              className="load-more-btn"
+              onClick={() => setShowAll(!showAll)}
+            >
+              {showAll ? "Show Less" : `Load More (${asteroids.length - 4})`}
+            </button>
+          )}
         </div>
       ) : (
         <div className="simulator-mode">
