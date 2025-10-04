@@ -36,6 +36,50 @@
   background: #444;
 }
 
+.info-panel {
+  background: linear-gradient(135deg, #1a3a5a 0%, #2a4a6a 100%);
+  border: 2px solid #0066cc;
+  border-radius: 8px;
+  padding: 15px;
+  margin-bottom: 20px;
+}
+
+.info-panel h4 {
+  margin: 0 0 12px 0;
+  font-size: 1em;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 4px;
+}
+
+.info-label {
+  font-weight: bold;
+  color: #6db3ff;
+  font-size: 0.9em;
+}
+
+.info-value {
+  color: #fff;
+  font-size: 0.85em;
+  text-align: right;
+}
+
 .asteroid-list {
   display: flex;
   flex-direction: column;

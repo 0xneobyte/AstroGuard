@@ -112,6 +112,50 @@ const Sidebar = () => {
         </button>
       </div>
 
+      {/* Data Source Info Panel */}
+      <div className="info-panel">
+        <h4>📊 Data Sources</h4>
+        {mode === "THREATS" ? (
+          <div className="info-content">
+            <div className="info-item">
+              <span className="info-label">Size:</span>
+              <span className="info-value">NASA API (diameter)</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Speed:</span>
+              <span className="info-value">NASA API (velocity)</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Angle:</span>
+              <span className="info-value">45° (default)</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Location:</span>
+              <span className="info-value">Your map click</span>
+            </div>
+          </div>
+        ) : (
+          <div className="info-content">
+            <div className="info-item">
+              <span className="info-label">Size:</span>
+              <span className="info-value">Your slider input</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Speed:</span>
+              <span className="info-value">Your slider input</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Angle:</span>
+              <span className="info-value">Your slider input</span>
+            </div>
+            <div className="info-item">
+              <span className="info-label">Location:</span>
+              <span className="info-value">Your map click</span>
+            </div>
+          </div>
+        )}
+      </div>
+
       {/* Content based on mode */}
       {mode === "THREATS" ? (
         <div className="threats-mode">
