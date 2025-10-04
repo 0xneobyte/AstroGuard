@@ -2,7 +2,7 @@ import { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import SpacekitView from "./components/SpacekitView";
 import MapView from "./components/MapView";
-import { Shield } from "lucide-react";
+import { Shield, Orbit, MapPin } from "lucide-react";
 import "./App.css";
 
 function App() {
@@ -24,14 +24,14 @@ function App() {
             className={`tab-btn ${activeTab === "3d" ? "active" : ""}`}
             onClick={() => setActiveTab("3d")}
           >
-            <span className="tab-icon">🛸</span>
+            <Orbit size={16} className="tab-icon" />
             <span className="tab-label">3D Orbit View</span>
           </button>
           <button
             className={`tab-btn ${activeTab === "map" ? "active" : ""}`}
             onClick={() => setActiveTab("map")}
           >
-            <span className="tab-icon">🗺️</span>
+            <MapPin size={16} className="tab-icon" />
             <span className="tab-label">Impact Map</span>
           </button>
         </nav>

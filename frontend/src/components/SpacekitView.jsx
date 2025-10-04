@@ -8,6 +8,7 @@ const SpacekitView = () => {
   const currentAsteroidRef = useRef(null);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [statusMessage, setStatusMessage] = useState("Initializing...");
+  const mode = useStore((state) => state.mode);
 
   const selectedAsteroid = useStore((state) => state.selectedAsteroid);
   const impactLocation = useStore((state) => state.impactLocation);
@@ -335,6 +336,156 @@ const SpacekitView = () => {
         ref={containerRef}
         style={{ width: "100%", height: "100%", background: "#000" }}
       />
+
+      {/* Data Sources Panel (Top Left) */}
+      <div
+        style={{
+          position: "absolute",
+          top: "1rem",
+          left: "1rem",
+          background: "#18181b",
+          border: "1px solid #27272a",
+          padding: "1rem",
+          borderRadius: "0.5rem",
+          fontSize: "0.875rem",
+          fontFamily: "'Poppins', system-ui, -apple-system, sans-serif",
+          zIndex: 100,
+          minWidth: "240px",
+          color: "#fafafa",
+          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+        }}
+      >
+        <h4
+          style={{
+            margin: "0 0 0.75rem 0",
+            fontSize: "0.875rem",
+            color: "#fafafa",
+            fontWeight: "600",
+          }}
+        >
+          Data Sources
+        </h4>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "0.25rem",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "0.25rem 0",
+            }}
+          >
+            <span
+              style={{
+                fontWeight: "500",
+                color: "#a1a1aa",
+                fontSize: "0.813rem",
+              }}
+            >
+              Size:
+            </span>
+            <span
+              style={{
+                color: "#fafafa",
+                fontSize: "0.813rem",
+                textAlign: "right",
+                fontWeight: "500",
+              }}
+            >
+              {mode === "THREATS" ? "NASA API (diameter)" : "Your slider input"}
+            </span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "0.25rem 0",
+            }}
+          >
+            <span
+              style={{
+                fontWeight: "500",
+                color: "#a1a1aa",
+                fontSize: "0.813rem",
+              }}
+            >
+              Speed:
+            </span>
+            <span
+              style={{
+                color: "#fafafa",
+                fontSize: "0.813rem",
+                textAlign: "right",
+                fontWeight: "500",
+              }}
+            >
+              {mode === "THREATS" ? "NASA API (velocity)" : "Your slider input"}
+            </span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "0.25rem 0",
+            }}
+          >
+            <span
+              style={{
+                fontWeight: "500",
+                color: "#a1a1aa",
+                fontSize: "0.813rem",
+              }}
+            >
+              Angle:
+            </span>
+            <span
+              style={{
+                color: "#fafafa",
+                fontSize: "0.813rem",
+                textAlign: "right",
+                fontWeight: "500",
+              }}
+            >
+              {mode === "THREATS" ? "45° (default)" : "Your slider input"}
+            </span>
+          </div>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              padding: "0.25rem 0",
+            }}
+          >
+            <span
+              style={{
+                fontWeight: "500",
+                color: "#a1a1aa",
+                fontSize: "0.813rem",
+              }}
+            >
+              Location:
+            </span>
+            <span
+              style={{
+                color: "#fafafa",
+                fontSize: "0.813rem",
+                textAlign: "right",
+                fontWeight: "500",
+              }}
+            >
+              Your map click
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Control Panel (shadcn style) */}
       <div
