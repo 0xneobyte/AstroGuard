@@ -92,6 +92,13 @@ class ImpactRequest(BaseModel):
     angle: int = Field(45, ge=15, le=90, description="Entry angle in degrees")
 
 
+class SimulateRealImpactRequest(BaseModel):
+    asteroid_id: str = Field(..., description="NASA asteroid ID")
+    lat: float = Field(..., ge=-90, le=90, description="Impact latitude")
+    lon: float = Field(..., ge=-180, le=180, description="Impact longitude")
+    angle: int = Field(45, ge=15, le=90, description="Entry angle in degrees")
+
+
 class DamageZone(BaseModel):
     radius_km: float
     type: str
@@ -486,6 +493,100 @@ async def calculate_impact_endpoint(impact: ImpactRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Impact calculation failed: {str(e)}"
+        )
+
+
+# Simulate real asteroid impact
+@app.post("/api/simulate-real-impact")
+async def simulate_real_impact(request: SimulateRealImpactRequest):
+    """
+    Simulate impact using a real NASA asteroid's parameters.
+    Fetches asteroid data and calculates what would happen if it hit Earth.
+    """
+    if not NASA_API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="NASA API key not configured"
+        )
+
+    # Fetch real asteroid data
+    url = f"{NASA_BASE_URL}/neo/{request.asteroid_id}"
+    params = {"api_key": NASA_API_KEY}
+
+    try:
+        response = requests.get(url, params=params, timeout=10)
+
+        if response.status_code == 404:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Asteroid {request.asteroid_id} not found"
+            )
+
+        if response.status_code == 429:
+            raise HTTPException(
+                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                detail="NASA API rate limit exceeded"
+            )
+
+        response.raise_for_status()
+        asteroid = response.json()
+
+    except requests.exceptions.Timeout:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="NASA API timeout"
+        )
+    except requests.exceptions.RequestException as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Failed to fetch NASA data: {str(e)}"
+        )
+
+    # Extract asteroid parameters
+    try:
+        diameter_min = asteroid["estimated_diameter"]["meters"]["estimated_diameter_min"]
+        diameter_max = asteroid["estimated_diameter"]["meters"]["estimated_diameter_max"]
+        avg_diameter = (diameter_min + diameter_max) / 2
+
+        # Get velocity from first close approach
+        if not asteroid.get("close_approach_data"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Asteroid has no close approach data"
+            )
+
+        velocity_km_s = float(asteroid["close_approach_data"][0]["relative_velocity"]["kilometers_per_second"])
+
+        # Calculate impact using real asteroid parameters
+        impact_result = calculate_impact(
+            size_m=int(avg_diameter),
+            speed_km_s=velocity_km_s,
+            angle=request.angle,
+            lat=request.lat,
+            lon=request.lon
+        )
+
+        # Get actual miss distance for context
+        actual_miss_km = float(asteroid["close_approach_data"][0]["miss_distance"]["kilometers"])
+        close_approach_date = asteroid["close_approach_data"][0]["close_approach_date"]
+
+        return {
+            "asteroid": {
+                "id": asteroid["id"],
+                "name": asteroid["name"],
+                "actual_miss_distance_km": actual_miss_km,
+                "size_m": avg_diameter,
+                "speed_km_s": velocity_km_s
+            },
+            "simulated_impact": impact_result,
+            "warning": "⚠️ This is a simulation. This asteroid will NOT hit Earth.",
+            "actual_close_approach": close_approach_date
+        }
+
+    except (KeyError, ValueError) as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to process asteroid data: {str(e)}"
         )
 
 
