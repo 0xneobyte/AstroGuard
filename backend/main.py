@@ -37,6 +37,7 @@ allowed_origins = [
     "http://localhost:3000",  # Local development
     "http://localhost:5173",  # Vite dev server
     "http://localhost:4173",  # Vite preview
+    "http://localhost:4174",
     "https://astro-nuts-nasa-space-apps.vercel.app",  # Your Vercel domain
     "https://*.vercel.app",  # All Vercel preview deployments
 ]
