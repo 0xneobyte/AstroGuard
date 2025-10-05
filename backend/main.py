@@ -106,7 +106,7 @@ class ImpactRequest(BaseModel):
     size_m: int = Field(..., ge=10, le=10000, description="Asteroid diameter in meters")
     speed_km_s: float = Field(..., ge=10, le=70, description="Velocity in km/s")
     lat: float = Field(..., ge=-90, le=90, description="Impact latitude")
-    lon: float = Field(..., ge=-180, le=180, description="Impact longitude")
+    lon: float = Field(..., ge=-360, le=360, description="Impact longitude (auto-normalized to -180,180)")
     angle: int = Field(45, ge=15, le=90, description="Entry angle in degrees")
     absolute_magnitude_h: Optional[float] = Field(None, description="NASA H-magnitude for density calculation")
 
@@ -114,7 +114,7 @@ class ImpactRequest(BaseModel):
 class SimulateRealImpactRequest(BaseModel):
     asteroid_id: str = Field(..., description="NASA asteroid ID")
     lat: float = Field(..., ge=-90, le=90, description="Impact latitude")
-    lon: float = Field(..., ge=-180, le=180, description="Impact longitude")
+    lon: float = Field(..., ge=-360, le=360, description="Impact longitude (auto-normalized to -180,180)")
     angle: int = Field(45, ge=15, le=90, description="Entry angle in degrees")
 
 
@@ -512,12 +512,19 @@ async def calculate_impact_endpoint(impact: ImpactRequest):
     Now includes taxonomic density classification and atmospheric effects.
     """
     try:
+        # Normalize longitude to -180,180 range if needed
+        lon = impact.lon
+        if lon > 180:
+            lon = lon - 360
+        elif lon < -180:
+            lon = lon + 360
+            
         result = calculate_impact(
             size_m=impact.size_m,
             speed_km_s=impact.speed_km_s,
             angle=impact.angle,
             lat=impact.lat,
-            lon=impact.lon,
+            lon=lon,
             absolute_magnitude_h=impact.absolute_magnitude_h
         )
         return result
@@ -589,13 +596,20 @@ async def simulate_real_impact(request: SimulateRealImpactRequest):
 
         velocity_km_s = float(asteroid["close_approach_data"][0]["relative_velocity"]["kilometers_per_second"])
 
+        # Normalize longitude to -180,180 range if needed
+        lon = request.lon
+        if lon > 180:
+            lon = lon - 360
+        elif lon < -180:
+            lon = lon + 360
+
         # Calculate impact using real asteroid parameters with H-magnitude
         impact_result = calculate_impact(
             size_m=int(avg_diameter),
             speed_km_s=velocity_km_s,
             angle=request.angle,
             lat=request.lat,
-            lon=request.lon,
+            lon=lon,
             absolute_magnitude_h=asteroid.get("absolute_magnitude_h")
         )
 
