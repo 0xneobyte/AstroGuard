@@ -10,7 +10,9 @@ const SpacekitView = () => {
   const containerRef = useRef(null);
   const vizRef = useRef(null);
   const currentAsteroidRef = useRef(null);
+  const currentAsteroidIdRef = useRef(null); // Track the ID of currently focused asteroid
   const labelsRef = useRef([]);
+  const loadedAsteroidsRef = useRef(new Set()); // Track loaded asteroid IDs
   const [currentDate, setCurrentDate] = useState(new Date());
   const [statusMessage, setStatusMessage] = useState("Initializing...");
   const mode = useStore((state) => state.mode);
@@ -173,6 +175,124 @@ const SpacekitView = () => {
     if (!vizRef.current || !selectedAsteroid) return;
 
     const viz = vizRef.current;
+    const asteroidId = `asteroid_${selectedAsteroid.id}`;
+
+    // Check if we're already viewing this exact asteroid - prevent redundant processing
+    if (currentAsteroidIdRef.current === selectedAsteroid.id) {
+      console.log(`Already viewing asteroid ${selectedAsteroid.name}, skipping`);
+      return;
+    }
+
+    console.log(`Switching to asteroid ${selectedAsteroid.name} (ID: ${selectedAsteroid.id})`);
+    console.log(`Previous asteroid ID: ${currentAsteroidIdRef.current}`);
+
+    // Hide the previous asteroid if it exists - try multiple methods
+    if (currentAsteroidIdRef.current && currentAsteroidIdRef.current !== selectedAsteroid.id) {
+      const prevAsteroidId = `asteroid_${currentAsteroidIdRef.current}`;
+      try {
+        const prevObj = viz.getObject(prevAsteroidId);
+        if (prevObj) {
+          console.log(`Trying to hide previous asteroid: ${prevAsteroidId}`);
+          
+          // Try multiple ways to hide the object
+          if (prevObj._object) {
+            prevObj._object.visible = false;
+            console.log(`Set _object.visible = false`);
+          }
+          
+          if (prevObj._orbit) {
+            prevObj._orbit.visible = false;
+            console.log(`Set _orbit.visible = false`);
+          }
+          
+          if (prevObj._renderMethod === 'SPHERE') {
+            // For sphere objects
+            if (prevObj._obj) {
+              prevObj._obj.visible = false;
+              console.log(`Set _obj.visible = false (sphere)`);
+            }
+          }
+          
+          // Try to access THREE.js mesh directly
+          if (prevObj.get3jsObjects) {
+            const objects = prevObj.get3jsObjects();
+            objects.forEach(obj => {
+              obj.visible = false;
+              console.log(`Hid a THREE.js object`);
+            });
+          }
+        }
+      } catch (error) {
+        console.log(`Could not hide previous asteroid: ${error.message}`);
+      }
+    }
+
+    // FIRST: Check if the object actually exists in the Spacekit scene
+    let existingObj = null;
+    try {
+      existingObj = viz.getObject(asteroidId);
+    } catch (error) {
+      console.log(`Error checking for existing object: ${error.message}`);
+    }
+
+    if (existingObj) {
+      console.log(`Asteroid ${selectedAsteroid.name} (ID: ${selectedAsteroid.id}) found in scene, reusing it`);
+      console.log(`Current tracked asteroids:`, Array.from(loadedAsteroidsRef.current));
+      
+      // Make sure this asteroid is visible - try all methods
+      if (existingObj._object) {
+        existingObj._object.visible = true;
+        console.log(`Made _object visible`);
+      }
+      if (existingObj._orbit) {
+        existingObj._orbit.visible = true;
+      }
+      if (existingObj._obj) {
+        existingObj._obj.visible = true;
+      }
+      if (existingObj.get3jsObjects) {
+        const objects = existingObj.get3jsObjects();
+        objects.forEach(obj => {
+          obj.visible = true;
+        });
+        console.log(`Made ${objects.length} THREE.js objects visible`);
+      }
+      
+      // Object exists, just focus camera on it
+      try {
+        console.log(`About to call followObject on ${asteroidId}`);
+        console.log(`Object properties:`, Object.keys(existingObj));
+        
+        // Try stopping any previous follow before starting new one
+        try {
+          viz.getViewer().stopFollowingObject();
+        } catch (e) {
+          // stopFollowingObject might not exist, try alternative
+          try {
+            viz.getViewer().followObject(null);
+          } catch (e2) {
+            console.log(`No stop method available`);
+          }
+        }
+        
+        viz.getViewer().followObject(existingObj, [-0.01, -0.01, 0.01]);
+        
+        console.log(`Successfully called followObject`);
+        currentAsteroidRef.current = existingObj;
+        currentAsteroidIdRef.current = selectedAsteroid.id; // Update currently viewed ID
+        setStatusMessage(`Viewing ${selectedAsteroid.name}`);
+        // Make sure it's tracked
+        loadedAsteroidsRef.current.add(selectedAsteroid.id);
+        return; // Exit early, don't recreate
+      } catch (error) {
+        console.error(`Error focusing on existing asteroid:`, error);
+        // Continue to recreation if focus fails
+      }
+    }
+
+    console.log(`Asteroid ${selectedAsteroid.name} not found in scene, creating new...`);
+    console.log(`Asteroid ID to create: ${asteroidId}`);
+    console.log(`Currently tracked IDs:`, Array.from(loadedAsteroidsRef.current));
 
     // Clear previous asteroid labels (keep Sun and Earth labels)
     labelsRef.current = labelsRef.current.filter((label) => {
@@ -232,7 +352,8 @@ const SpacekitView = () => {
           ? 0xff0000
           : 0xffaa00;
 
-        const obj = viz.createShape(`asteroid_${selectedAsteroid.id}`, {
+        console.log(`Creating asteroid shape: ${asteroidId}`);
+        const obj = viz.createShape(asteroidId, {
           ephem,
           ecliptic: {
             displayLines: true,
@@ -252,11 +373,50 @@ const SpacekitView = () => {
           },
         });
 
+        console.log(`createShape returned:`, obj ? 'valid object' : 'NULL');
+
         if (obj) {
           obj.initRotation();
           obj.startRotation();
 
           currentAsteroidRef.current = obj;
+          currentAsteroidIdRef.current = selectedAsteroid.id; // Track current asteroid ID
+          
+          // Hide all other asteroids
+          loadedAsteroidsRef.current.forEach(id => {
+            if (id !== selectedAsteroid.id) {
+              try {
+                const otherObj = viz.getObject(`asteroid_${id}`);
+                if (otherObj) {
+                  // Try all possible visibility properties
+                  if (otherObj._object) otherObj._object.visible = false;
+                  if (otherObj._orbit) otherObj._orbit.visible = false;
+                  if (otherObj._obj) otherObj._obj.visible = false;
+                  if (otherObj.get3jsObjects) {
+                    otherObj.get3jsObjects().forEach(obj => obj.visible = false);
+                  }
+                  console.log(`Hiding other asteroid (orbital): asteroid_${id}`);
+                }
+              } catch (error) {
+                console.log(`Could not hide asteroid_${id}: ${error.message}`);
+              }
+            }
+          });
+          
+          // Make sure this asteroid is visible
+          if (obj._object) {
+            obj._object.visible = true;
+          }
+          if (obj._orbit) {
+            obj._orbit.visible = true;
+          }
+          if (obj.get3jsObjects) {
+            obj.get3jsObjects().forEach(o => o.visible = true);
+          }
+          
+          // Track that this asteroid has been loaded
+          loadedAsteroidsRef.current.add(selectedAsteroid.id);
+          console.log(`Loaded asteroid ${selectedAsteroid.name} with ID ${selectedAsteroid.id}`);
 
           // Add label for asteroid
           const asteroidIcon = selectedAsteroid.is_potentially_hazardous ? "⚠️" : "☄️";
@@ -275,6 +435,7 @@ const SpacekitView = () => {
           throw new Error("createShape returned null");
         }
       } catch (error) {
+        console.error(`Error loading asteroid:`, error);
         setStatusMessage(`Error: ${error.message}`);
       }
     } else {
@@ -305,7 +466,8 @@ const SpacekitView = () => {
           "deg"
         );
 
-        const obj = viz.createShape(`asteroid_${selectedAsteroid.id}`, {
+        console.log(`Creating approximate asteroid shape: ${asteroidId}`);
+        const obj = viz.createShape(asteroidId, {
           ephem,
           ecliptic: {
             displayLines: true,
@@ -325,10 +487,49 @@ const SpacekitView = () => {
           },
         });
 
+        console.log(`createShape returned:`, obj ? 'valid object' : 'NULL');
+
         if (obj) {
           obj.initRotation();
           obj.startRotation();
           currentAsteroidRef.current = obj;
+          currentAsteroidIdRef.current = selectedAsteroid.id; // Track current asteroid ID
+          
+          // Hide all other asteroids
+          loadedAsteroidsRef.current.forEach(id => {
+            if (id !== selectedAsteroid.id) {
+              try {
+                const otherObj = viz.getObject(`asteroid_${id}`);
+                if (otherObj) {
+                  // Try all possible visibility properties
+                  if (otherObj._object) otherObj._object.visible = false;
+                  if (otherObj._orbit) otherObj._orbit.visible = false;
+                  if (otherObj._obj) otherObj._obj.visible = false;
+                  if (otherObj.get3jsObjects) {
+                    otherObj.get3jsObjects().forEach(obj => obj.visible = false);
+                  }
+                  console.log(`Hiding other asteroid (approximate): asteroid_${id}`);
+                }
+              } catch (error) {
+                console.log(`Could not hide asteroid_${id}: ${error.message}`);
+              }
+            }
+          });
+          
+          // Make sure this asteroid is visible
+          if (obj._object) {
+            obj._object.visible = true;
+          }
+          if (obj._orbit) {
+            obj._orbit.visible = true;
+          }
+          if (obj.get3jsObjects) {
+            obj.get3jsObjects().forEach(o => o.visible = true);
+          }
+          
+          // Track that this asteroid has been loaded
+          loadedAsteroidsRef.current.add(selectedAsteroid.id);
+          console.log(`Loaded approximate orbit for ${selectedAsteroid.name} with ID ${selectedAsteroid.id}`);
           
           // Add label for approximate orbit asteroid
           const asteroidIcon = selectedAsteroid.is_potentially_hazardous ? "⚠️" : "☄️";
@@ -344,6 +545,7 @@ const SpacekitView = () => {
           );
         }
       } catch (error) {
+        console.error(`Error loading approximate orbit:`, error);
         setStatusMessage(`Error: ${error.message}`);
       }
     }

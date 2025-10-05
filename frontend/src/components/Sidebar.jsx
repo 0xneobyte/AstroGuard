@@ -7,7 +7,7 @@ import {
   simulateRealImpact,
   calculateDeflection,
 } from "../services/api";
-import { Ruler, Zap, Calendar, AlertTriangle, ChevronDown, Search, X, Filter, Trash2, Database, MapPin, Shield, Rocket, Skull, Mountain, Flame, Users } from "lucide-react";
+import { Ruler, Zap, Calendar, AlertTriangle, ChevronDown, Search, X, Filter, Trash2, Database, MapPin, Shield, Rocket, Skull, Mountain, Flame, Users, Eye } from "lucide-react";
 import "./Sidebar.css";
 
 const Sidebar = () => {
@@ -100,8 +100,9 @@ const Sidebar = () => {
       setSelectedAsteroid(details);
       
       // Add to selected asteroids if not already added
+      // IMPORTANT: Store the FULL details, not just the basic object
       if (!selectedAsteroids.find(a => a.id === asteroid.id)) {
-        setSelectedAsteroids([...selectedAsteroids, asteroid]);
+        setSelectedAsteroids([...selectedAsteroids, details]); // Use 'details' instead of 'asteroid'
       }
       
       setIsDropdownOpen(false); // Close dropdown after selection
@@ -122,6 +123,37 @@ const Sidebar = () => {
   const handleClearAll = () => {
     setSelectedAsteroids([]);
     setSelectedAsteroid(null);
+  };
+
+  // Focus camera on specific asteroid when clicked from selected list
+  const handleFocusOnAsteroid = async (asteroid) => {
+    // If this asteroid is already selected, just trigger a camera focus
+    // by setting it again (the SpacekitView will handle the camera movement)
+    if (selectedAsteroid?.id === asteroid.id) {
+      console.log(`Asteroid ${asteroid.name} already selected, skipping`);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      
+      // IMPORTANT: Check if we already have full details loaded
+      // If the asteroid object already has orbital_data, use it directly
+      // This prevents creating duplicates when switching between already-loaded asteroids
+      if (asteroid.orbital_data || asteroid.close_approach_data) {
+        console.log(`Using cached asteroid data for ${asteroid.name}`);
+        setSelectedAsteroid(asteroid);
+      } else {
+        // Need to fetch full details
+        console.log(`Fetching fresh details for ${asteroid.name}`);
+        const details = await getAsteroidDetails(asteroid.id);
+        setSelectedAsteroid(details);
+      }
+    } catch (err) {
+      setError("Failed to load asteroid details");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDeflectionCalculation = async (method) => {
@@ -367,6 +399,8 @@ const Sidebar = () => {
                     className={`selected-asteroid-card ${
                       asteroid.is_potentially_hazardous ? "hazardous" : ""
                     } ${selectedAsteroid?.id === asteroid.id ? "active" : ""}`}
+                    onClick={() => handleFocusOnAsteroid(asteroid)}
+                    title="Click to focus camera on this asteroid"
                   >
                     <div className="selected-asteroid-info">
                       <div className="selected-name">
@@ -380,9 +414,18 @@ const Sidebar = () => {
                         <span><Zap size={10} /> {asteroid.close_approach_data[0]?.relative_velocity_km_s.toFixed(1)} km/s</span>
                       </div>
                     </div>
+                    
+                    {/* Focus indicator - shows on hover */}
+                    <div className="focus-indicator">
+                      <Eye size={14} />
+                    </div>
+                    
                     <button
                       className="remove-btn"
-                      onClick={() => handleRemoveSelected(asteroid.id)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent triggering focus when removing
+                        handleRemoveSelected(asteroid.id);
+                      }}
                       title="Remove from selection"
                     >
                       <X size={16} />

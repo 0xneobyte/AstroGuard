@@ -792,6 +792,7 @@ h3 {
   transition: all 0.2s ease;
   position: relative;
   overflow: hidden;
+  cursor: pointer; /* Make it clear it's clickable */
 }
 
 .selected-asteroid-card::before {
@@ -815,14 +816,44 @@ h3 {
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
+/* Enhanced hover state to show it's clickable */
 .selected-asteroid-card:hover {
   background: #18181b;
   border-color: #3f3f46;
+  transform: translateX(2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Visual feedback when clicking */
+.selected-asteroid-card:active {
+  transform: translateX(1px);
+  background: #27272a;
 }
 
 .selected-asteroid-info {
   flex: 1;
   padding-left: 0.5rem;
+}
+
+/* Focus indicator - Eye icon that appears on hover */
+.focus-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #52525b;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  margin-right: 0.5rem;
+}
+
+.selected-asteroid-card:hover .focus-indicator {
+  opacity: 1;
+  color: #3b82f6;
+}
+
+.selected-asteroid-card.active .focus-indicator {
+  opacity: 1;
+  color: #3b82f6;
 }
 
 .selected-name {
