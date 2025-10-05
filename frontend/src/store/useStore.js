@@ -20,6 +20,7 @@ const useStore = create((set) => ({
     size_m: 500,
     speed_km_s: 25,
     angle: 45,
+    density_kg_m3: 2700, // Default S-type asteroid density
   },
   setSimulatorParams: (params) => set({ simulatorParams: params }),
 

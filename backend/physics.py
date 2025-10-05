@@ -215,7 +215,7 @@ def calculate_asteroid_density(absolute_magnitude_h: float, diameter_m: float) -
     return density, asteroid_type, confidence
 
 
-def calculate_impact(size_m: int, speed_km_s: float, angle: int, lat: float, lon: float, absolute_magnitude_h: float = None) -> dict:
+def calculate_impact(size_m: int, speed_km_s: float, angle: int, lat: float, lon: float, absolute_magnitude_h: float = None, custom_density_kg_m3: float = None) -> dict:
     """
     Calculate asteroid impact effects using scientific formulas.
 
@@ -226,6 +226,7 @@ def calculate_impact(size_m: int, speed_km_s: float, angle: int, lat: float, lon
         lat: Impact latitude
         lon: Impact longitude
         absolute_magnitude_h: NASA absolute magnitude for density calculation
+        custom_density_kg_m3: Custom density override (for simulator mode)
 
     Returns:
         Dictionary with impact results
@@ -235,8 +236,12 @@ def calculate_impact(size_m: int, speed_km_s: float, angle: int, lat: float, lon
     radius_m = size_m / 2
     volume_m3 = (4/3) * math.pi * (radius_m ** 3)
 
-    # Use scientific density calculation if H-magnitude available
-    if absolute_magnitude_h:
+    # Use custom density if provided, otherwise calculate from H-magnitude
+    if custom_density_kg_m3:
+        density_kg_m3 = custom_density_kg_m3
+        asteroid_type = f"Custom ({density_kg_m3} kg/m³)"
+        confidence = 1.0
+    elif absolute_magnitude_h:
         density_kg_m3, asteroid_type, confidence = calculate_asteroid_density(absolute_magnitude_h, size_m)
     else:
         # Fallback to S-type average if no H-magnitude data

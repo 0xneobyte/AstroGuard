@@ -7,7 +7,27 @@ import {
   simulateRealImpact,
   calculateDeflection,
 } from "../services/api";
-import { Ruler, Zap, Calendar, AlertTriangle, ChevronDown, Search, X, Filter, Trash2, Database, MapPin, Shield, Rocket, Skull, Mountain, Flame, Users, Eye, Map } from "lucide-react";
+import {
+  Ruler,
+  Zap,
+  Calendar,
+  AlertTriangle,
+  ChevronDown,
+  Search,
+  X,
+  Filter,
+  Trash2,
+  Database,
+  MapPin,
+  Shield,
+  Rocket,
+  Skull,
+  Mountain,
+  Flame,
+  Users,
+  Eye,
+  Map,
+} from "lucide-react";
 import "./Sidebar.css";
 
 const Sidebar = ({ activeTab, setActiveTab }) => {
@@ -27,7 +47,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   const setLoading = useStore((state) => state.setLoading);
   const error = useStore((state) => state.error);
   const setError = useStore((state) => state.setError);
-  
+
   // Dropdown and search state
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,7 +57,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   const [selectedAsteroids, setSelectedAsteroids] = useState([]); // Track multiple selections
   const [deflectionResults, setDeflectionResults] = useState(null);
   const [showDeflectionPanel, setShowDeflectionPanel] = useState(false);
-  
+
   // Separate state for simulator asteroid selection (doesn't affect Real Threats)
   const [simulatorAsteroid, setSimulatorAsteroid] = useState(null);
 
@@ -88,8 +108,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         );
       } else {
         // Sort by date (default)
-        const dateA = new Date(a.close_approach_data[0]?.close_approach_date || 0);
-        const dateB = new Date(b.close_approach_data[0]?.close_approach_date || 0);
+        const dateA = new Date(
+          a.close_approach_data[0]?.close_approach_date || 0
+        );
+        const dateB = new Date(
+          b.close_approach_data[0]?.close_approach_date || 0
+        );
         return dateA - dateB;
       }
     });
@@ -102,13 +126,13 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       setLoading(true);
       const details = await getAsteroidDetails(asteroid.id);
       setSelectedAsteroid(details);
-      
+
       // Add to selected asteroids if not already added
       // IMPORTANT: Store the FULL details, not just the basic object
-      if (!selectedAsteroids.find(a => a.id === asteroid.id)) {
+      if (!selectedAsteroids.find((a) => a.id === asteroid.id)) {
         setSelectedAsteroids([...selectedAsteroids, details]); // Use 'details' instead of 'asteroid'
       }
-      
+
       setIsDropdownOpen(false); // Close dropdown after selection
     } catch (err) {
       setError("Failed to load asteroid details");
@@ -118,7 +142,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
   };
 
   const handleRemoveSelected = (asteroidId) => {
-    setSelectedAsteroids(selectedAsteroids.filter(a => a.id !== asteroidId));
+    setSelectedAsteroids(selectedAsteroids.filter((a) => a.id !== asteroidId));
     if (selectedAsteroid?.id === asteroidId) {
       setSelectedAsteroid(null);
     }
@@ -140,7 +164,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
     try {
       setLoading(true);
-      
+
       // IMPORTANT: Check if we already have full details loaded
       // If the asteroid object already has orbital_data, use it directly
       // This prevents creating duplicates when switching between already-loaded asteroids
@@ -176,20 +200,36 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       const deflectionData = {
         asteroid_id: selectedAsteroid.id,
         method: method,
-        asteroid_diameter_m: selectedAsteroid.estimated_diameter.meters.estimated_diameter_max,
-        velocity_km_s: selectedAsteroid.close_approach_data[0]?.relative_velocity.kilometers_per_second || 20,
-        distance_au: selectedAsteroid.close_approach_data[0]?.miss_distance.astronomical || 0.05,
-        days_until_impact: Math.max(1, Math.floor((new Date(selectedAsteroid.close_approach_data[0]?.close_approach_date) - new Date()) / (1000 * 60 * 60 * 24))),
+        asteroid_diameter_m:
+          selectedAsteroid.estimated_diameter.meters.estimated_diameter_max,
+        velocity_km_s:
+          selectedAsteroid.close_approach_data[0]?.relative_velocity
+            .kilometers_per_second || 20,
+        distance_au:
+          selectedAsteroid.close_approach_data[0]?.miss_distance.astronomical ||
+          0.05,
+        days_until_impact: Math.max(
+          1,
+          Math.floor(
+            (new Date(
+              selectedAsteroid.close_approach_data[0]?.close_approach_date
+            ) -
+              new Date()) /
+              (1000 * 60 * 60 * 24)
+          )
+        ),
       };
 
       const result = await calculateDeflection(deflectionData);
-      
+
       if (method === "nuclear" && deflectionData.asteroid_diameter_m < 200) {
-        result.warning = "⚠️ Nuclear deflection may be excessive for small asteroids. Consider kinetic impactor instead.";
+        result.warning =
+          "⚠️ Nuclear deflection may be excessive for small asteroids. Consider kinetic impactor instead.";
       }
 
       if (deflectionData.days_until_impact < 100) {
-        result.timeWarning = "⚠️ Limited time for deflection mission. Success probability may be reduced.";
+        result.timeWarning =
+          "⚠️ Limited time for deflection mission. Success probability may be reduced.";
       }
 
       setDeflectionResults(result);
@@ -207,7 +247,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
         // More helpful message for simulator mode with option to navigate
         const goToMap = window.confirm(
           "Please select an impact location first!\n\n" +
-          "Click OK to go to the Impact Map and choose where the asteroid will strike."
+            "Click OK to go to the Impact Map and choose where the asteroid will strike."
         );
         if (goToMap && setActiveTab) {
           setActiveTab("map");
@@ -282,29 +322,27 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
       {/* Content based on mode */}
       {mode === "THREATS" ? (
         <div className="threats-mode">
-          <h2 className="section-heading">
-            Asteroid Selector
-          </h2>
+          <h2 className="section-heading">Asteroid Selector</h2>
           {loading && <div className="loading">Loading...</div>}
           {error && <div className="error">{error}</div>}
 
           {/* Dropdown for asteroid selection */}
           <div className="asteroid-dropdown-container">
-            <div 
-              className="dropdown-header" 
+            <div
+              className="dropdown-header"
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
             >
               <span className="dropdown-text">
-                {selectedAsteroid 
-                  ? selectedAsteroid.name 
+                {selectedAsteroid
+                  ? selectedAsteroid.name
                   : "Select asteroids to analyze..."}
               </span>
-              <ChevronDown 
-                size={18} 
-                className={`dropdown-icon ${isDropdownOpen ? 'open' : ''}`} 
+              <ChevronDown
+                size={18}
+                className={`dropdown-icon ${isDropdownOpen ? "open" : ""}`}
               />
             </div>
-            
+
             {isDropdownOpen && (
               <div className="dropdown-content">
                 {/* Search input */}
@@ -319,9 +357,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                     onClick={(e) => e.stopPropagation()}
                   />
                   {searchTerm && (
-                    <X 
-                      size={16} 
-                      className="clear-search" 
+                    <X
+                      size={16}
+                      className="clear-search"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSearchTerm("");
@@ -334,8 +372,8 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 <div className="filter-controls">
                   <div className="filter-group">
                     <Filter size={14} className="filter-icon" />
-                    <select 
-                      value={filterType} 
+                    <select
+                      value={filterType}
                       onChange={(e) => setFilterType(e.target.value)}
                       className="filter-select"
                     >
@@ -344,11 +382,11 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                       <option value="non-hazardous">✓ Non-Hazardous</option>
                     </select>
                   </div>
-                  
+
                   <div className="sort-group">
                     <span className="sort-label">Sort:</span>
-                    <select 
-                      value={sortBy} 
+                    <select
+                      value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
                       className="sort-select"
                     >
@@ -361,9 +399,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
                 {/* Result count */}
                 <div className="result-count">
-                  {filteredAsteroids.length} asteroid{filteredAsteroids.length !== 1 ? 's' : ''} found
+                  {filteredAsteroids.length} asteroid
+                  {filteredAsteroids.length !== 1 ? "s" : ""} found
                 </div>
-                
+
                 {/* Asteroid options */}
                 <div className="asteroid-options">
                   {filteredAsteroids.length > 0 ? (
@@ -372,7 +411,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                         key={asteroid.id}
                         className={`asteroid-option ${
                           asteroid.is_potentially_hazardous ? "hazardous" : ""
-                        } ${selectedAsteroid?.id === asteroid.id ? "selected" : ""}`}
+                        } ${
+                          selectedAsteroid?.id === asteroid.id ? "selected" : ""
+                        }`}
                         onClick={() => handleAsteroidClick(asteroid)}
                       >
                         <div className="option-header">
@@ -388,7 +429,10 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                           </span>
                           <span className="option-detail">
                             <Zap size={12} />
-                            {asteroid.close_approach_data[0]?.relative_velocity_km_s.toFixed(1)} km/s
+                            {asteroid.close_approach_data[0]?.relative_velocity_km_s.toFixed(
+                              1
+                            )}{" "}
+                            km/s
                           </span>
                         </div>
                         <div className="option-date">
@@ -414,7 +458,7 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             <div className="selected-asteroids-section">
               <div className="selected-header">
                 <h3>Selected Asteroids ({selectedAsteroids.length})</h3>
-                <button 
+                <button
                   className="clear-all-btn"
                   onClick={handleClearAll}
                   title="Clear all selections"
@@ -423,11 +467,11 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                   Clear All
                 </button>
               </div>
-              
+
               <div className="selected-asteroids-list">
                 {selectedAsteroids.map((asteroid) => (
-                  <div 
-                    key={asteroid.id} 
+                  <div
+                    key={asteroid.id}
                     className={`selected-asteroid-card ${
                       asteroid.is_potentially_hazardous ? "hazardous" : ""
                     } ${selectedAsteroid?.id === asteroid.id ? "active" : ""}`}
@@ -438,20 +482,32 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                       <div className="selected-name">
                         {asteroid.name}
                         {asteroid.is_potentially_hazardous && (
-                          <AlertTriangle size={12} className="hazard-badge-small" />
+                          <AlertTriangle
+                            size={12}
+                            className="hazard-badge-small"
+                          />
                         )}
                       </div>
                       <div className="selected-details">
-                        <span><Ruler size={10} /> {Math.round(asteroid.average_diameter_m)}m</span>
-                        <span><Zap size={10} /> {asteroid.close_approach_data[0]?.relative_velocity_km_s.toFixed(1)} km/s</span>
+                        <span>
+                          <Ruler size={10} />{" "}
+                          {Math.round(asteroid.average_diameter_m)}m
+                        </span>
+                        <span>
+                          <Zap size={10} />{" "}
+                          {asteroid.close_approach_data[0]?.relative_velocity_km_s.toFixed(
+                            1
+                          )}{" "}
+                          km/s
+                        </span>
                       </div>
                     </div>
-                    
+
                     {/* Focus indicator - shows on hover */}
                     <div className="focus-indicator">
                       <Eye size={14} />
                     </div>
-                    
+
                     <button
                       className="remove-btn"
                       onClick={(e) => {
@@ -482,7 +538,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                     <span>Asteroid Size</span>
                   </div>
                   <div className="data-source-value">
-                    {mode === "THREATS" ? "NASA JPL SBDB (Small-Body Database)" : "Custom Input"}
+                    {mode === "THREATS"
+                      ? "NASA JPL SBDB (Small-Body Database)"
+                      : "Custom Input"}
                   </div>
                 </div>
                 <div className="data-source-item">
@@ -491,7 +549,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                     <span>Velocity</span>
                   </div>
                   <div className="data-source-value">
-                    {mode === "THREATS" ? "NASA JPL Horizons System" : "Custom Input"}
+                    {mode === "THREATS"
+                      ? "NASA JPL Horizons System"
+                      : "Custom Input"}
                   </div>
                 </div>
                 <div className="data-source-item">
@@ -500,7 +560,9 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                     <span>Impact Angle</span>
                   </div>
                   <div className="data-source-value">
-                    {mode === "THREATS" ? "45° (Statistical Average)" : "Custom Input"}
+                    {mode === "THREATS"
+                      ? "45° (Statistical Average)"
+                      : "Custom Input"}
                   </div>
                 </div>
                 <div className="data-source-item">
@@ -530,14 +592,20 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
               </div>
               <div className="mitigation-buttons">
                 <button
-                  onClick={() => handleDeflectionCalculation("kinetic_impactor")}
+                  onClick={() =>
+                    handleDeflectionCalculation("kinetic_impactor")
+                  }
                   className="mitigation-btn kinetic"
                   disabled={loading}
                 >
                   <Rocket size={16} />
                   <div className="mitigation-btn-content">
-                    <span className="mitigation-btn-title">Kinetic Impactor</span>
-                    <span className="mitigation-btn-desc">High-speed collision</span>
+                    <span className="mitigation-btn-title">
+                      Kinetic Impactor
+                    </span>
+                    <span className="mitigation-btn-desc">
+                      High-speed collision
+                    </span>
                   </div>
                 </button>
 
@@ -548,8 +616,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 >
                   <Shield size={16} />
                   <div className="mitigation-btn-content">
-                    <span className="mitigation-btn-title">Gravity Tractor</span>
-                    <span className="mitigation-btn-desc">Gradual gravitational pull</span>
+                    <span className="mitigation-btn-title">
+                      Gravity Tractor
+                    </span>
+                    <span className="mitigation-btn-desc">
+                      Gradual gravitational pull
+                    </span>
                   </div>
                 </button>
 
@@ -560,8 +632,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 >
                   <Zap size={16} />
                   <div className="mitigation-btn-content">
-                    <span className="mitigation-btn-title">Nuclear Deflection</span>
-                    <span className="mitigation-btn-desc">Maximum force option</span>
+                    <span className="mitigation-btn-title">
+                      Nuclear Deflection
+                    </span>
+                    <span className="mitigation-btn-desc">
+                      Maximum force option
+                    </span>
                   </div>
                 </button>
               </div>
@@ -587,10 +663,13 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
               <div className="deflection-stats">
                 <div className="deflection-stat">
                   <span className="stat-label">Effectiveness</span>
-                  <span 
+                  <span
                     className={`stat-value ${
-                      deflectionResults.effectiveness > 70 ? 'success' : 
-                      deflectionResults.effectiveness > 40 ? 'warning' : 'danger'
+                      deflectionResults.effectiveness > 70
+                        ? "success"
+                        : deflectionResults.effectiveness > 40
+                        ? "warning"
+                        : "danger"
                     }`}
                   >
                     {deflectionResults.effectiveness}%
@@ -598,19 +677,28 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 </div>
                 <div className="deflection-stat">
                   <span className="stat-label">Velocity Change</span>
-                  <span className="stat-value">{deflectionResults.velocity_change_km_s} km/s</span>
+                  <span className="stat-value">
+                    {deflectionResults.velocity_change_km_s} km/s
+                  </span>
                 </div>
                 <div className="deflection-stat">
                   <span className="stat-label">Deflection Distance</span>
-                  <span className="stat-value">{deflectionResults.deflection_distance_km.toLocaleString()} km</span>
+                  <span className="stat-value">
+                    {deflectionResults.deflection_distance_km.toLocaleString()}{" "}
+                    km
+                  </span>
                 </div>
                 <div className="deflection-stat">
                   <span className="stat-label">Time Required</span>
-                  <span className="stat-value">{deflectionResults.time_required_days} days</span>
+                  <span className="stat-value">
+                    {deflectionResults.time_required_days} days
+                  </span>
                 </div>
                 <div className="deflection-stat">
                   <span className="stat-label">Success Rate</span>
-                  <span className="stat-value">{deflectionResults.success_probability}%</span>
+                  <span className="stat-value">
+                    {deflectionResults.success_probability}%
+                  </span>
                 </div>
               </div>
 
@@ -642,25 +730,29 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
 
           {/* Asteroid Selector for Simulator */}
           <div className="simulator-asteroid-selector">
-            <label style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '0.5rem',
-              fontSize: '0.875rem',
-              fontWeight: '500',
-              color: '#fafafa',
-              marginBottom: '1rem',
-            }}>
-              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <label
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "0.5rem",
+                fontSize: "0.875rem",
+                fontWeight: "500",
+                color: "#fafafa",
+                marginBottom: "1rem",
+              }}
+            >
+              <span
+                style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}
+              >
                 <Rocket size={14} />
                 Select Real Asteroid (Optional)
               </span>
               <select
-                value={simulatorAsteroid?.id || ''}
+                value={simulatorAsteroid?.id || ""}
                 onChange={(e) => {
                   const asteroidId = e.target.value;
                   if (asteroidId) {
-                    const asteroid = asteroids.find(a => a.id === asteroidId);
+                    const asteroid = asteroids.find((a) => a.id === asteroidId);
                     if (asteroid) {
                       setSimulatorAsteroid(asteroid);
                       // Auto-populate simulator params based on asteroid
@@ -668,8 +760,12 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                         setSimulatorParams({
                           ...simulatorParams,
                           size_m: Math.round(asteroid.average_diameter_m),
-                          speed_km_s: asteroid.close_approach_data[0]?.relative_velocity_km_s 
-                            ? Math.round(asteroid.close_approach_data[0].relative_velocity_km_s) 
+                          speed_km_s: asteroid.close_approach_data[0]
+                            ?.relative_velocity_km_s
+                            ? Math.round(
+                                asteroid.close_approach_data[0]
+                                  .relative_velocity_km_s
+                              )
                             : simulatorParams.speed_km_s,
                         });
                       }
@@ -679,21 +775,21 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                   }
                 }}
                 style={{
-                  background: '#18181b',
-                  border: '1px solid #3f3f46',
-                  borderRadius: '0.5rem',
-                  padding: '0.75rem',
-                  color: '#fafafa',
-                  fontSize: '0.875rem',
-                  cursor: 'pointer',
-                  outline: 'none',
+                  background: "#18181b",
+                  border: "1px solid #3f3f46",
+                  borderRadius: "0.5rem",
+                  padding: "0.75rem",
+                  color: "#fafafa",
+                  fontSize: "0.875rem",
+                  cursor: "pointer",
+                  outline: "none",
                 }}
               >
                 <option value="">Custom Parameters</option>
                 {asteroids.map((asteroid) => (
                   <option key={asteroid.id} value={asteroid.id}>
                     {asteroid.name} - {Math.round(asteroid.average_diameter_m)}m
-                    {asteroid.is_potentially_hazardous ? ' ⚠️' : ''}
+                    {asteroid.is_potentially_hazardous ? " ⚠️" : ""}
                   </option>
                 ))}
               </select>
@@ -790,6 +886,32 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
                 }
               />
             </label>
+
+            <label>
+              Density: {simulatorParams.density_kg_m3} kg/m³
+              <input
+                type="range"
+                min="1000"
+                max="5000"
+                step="100"
+                value={simulatorParams.density_kg_m3}
+                onChange={(e) =>
+                  setSimulatorParams({
+                    ...simulatorParams,
+                    density_kg_m3: parseInt(e.target.value),
+                  })
+                }
+              />
+              <div
+                style={{
+                  fontSize: "0.75rem",
+                  color: "#888",
+                  marginTop: "0.25rem",
+                }}
+              >
+                C-type: ~1400 kg/m³ • S-type: ~2700 kg/m³ • M-type: ~5200 kg/m³
+              </div>
+            </label>
           </div>
         </div>
       )}
@@ -866,22 +988,30 @@ const Sidebar = ({ activeTab, setActiveTab }) => {
             <div className="comparison-icon">
               <Zap size={16} />
             </div>
-            <div className="comparison-text">
-              {impactResults.comparison}
-            </div>
+            <div className="comparison-text">{impactResults.comparison}</div>
           </div>
 
           {/* Severity Indicator */}
-          <div className={`impact-severity ${
-            impactResults.energy_megatons > 1000 ? 'catastrophic' :
-            impactResults.energy_megatons > 100 ? 'severe' :
-            impactResults.energy_megatons > 10 ? 'major' : 'moderate'
-          }`}>
+          <div
+            className={`impact-severity ${
+              impactResults.energy_megatons > 1000
+                ? "catastrophic"
+                : impactResults.energy_megatons > 100
+                ? "severe"
+                : impactResults.energy_megatons > 10
+                ? "major"
+                : "moderate"
+            }`}
+          >
             <div className="severity-label">Threat Level:</div>
             <div className="severity-value">
-              {impactResults.energy_megatons > 1000 ? 'CATASTROPHIC' :
-               impactResults.energy_megatons > 100 ? 'SEVERE' :
-               impactResults.energy_megatons > 10 ? 'MAJOR' : 'MODERATE'}
+              {impactResults.energy_megatons > 1000
+                ? "CATASTROPHIC"
+                : impactResults.energy_megatons > 100
+                ? "SEVERE"
+                : impactResults.energy_megatons > 10
+                ? "MAJOR"
+                : "MODERATE"}
             </div>
           </div>
         </div>

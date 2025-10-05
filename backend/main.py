@@ -109,6 +109,7 @@ class ImpactRequest(BaseModel):
     lon: float = Field(..., ge=-360, le=360, description="Impact longitude (auto-normalized to -180,180)")
     angle: int = Field(45, ge=15, le=90, description="Entry angle in degrees")
     absolute_magnitude_h: Optional[float] = Field(None, description="NASA H-magnitude for density calculation")
+    density_kg_m3: Optional[float] = Field(None, ge=1000, le=5000, description="Custom asteroid density (overrides H-magnitude calculation)")
 
 
 class SimulateRealImpactRequest(BaseModel):
@@ -525,7 +526,8 @@ async def calculate_impact_endpoint(impact: ImpactRequest):
             angle=impact.angle,
             lat=impact.lat,
             lon=lon,
-            absolute_magnitude_h=impact.absolute_magnitude_h
+            absolute_magnitude_h=impact.absolute_magnitude_h,
+            custom_density_kg_m3=impact.density_kg_m3
         )
         return result
     except Exception as e:
