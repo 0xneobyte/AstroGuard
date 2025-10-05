@@ -10,12 +10,89 @@ const SpacekitView = () => {
   const containerRef = useRef(null);
   const vizRef = useRef(null);
   const currentAsteroidRef = useRef(null);
+  const labelsRef = useRef([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [statusMessage, setStatusMessage] = useState("Initializing...");
   const mode = useStore((state) => state.mode);
 
   const selectedAsteroid = useStore((state) => state.selectedAsteroid);
   const impactLocation = useStore((state) => state.impactLocation);
+
+  // Function to create a label for an object
+  const createLabel = (text, objectId) => {
+    const labelDiv = document.createElement("div");
+    labelDiv.className = "spacekit-label";
+    labelDiv.textContent = text;
+    labelDiv.style.cssText = `
+      position: absolute;
+      color: #ffffff;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Poppins', sans-serif;
+      pointer-events: none;
+      white-space: nowrap;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+      z-index: 50;
+      backdrop-filter: blur(8px);
+      display: none;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    `;
+    containerRef.current.appendChild(labelDiv);
+    return { element: labelDiv, objectId, text };
+  };
+
+  // Function to update label positions
+  const updateLabels = () => {
+    if (!vizRef.current || !containerRef.current || !window.THREE) return;
+
+    const viz = vizRef.current;
+    const camera = viz.getViewer().get3jsCamera();
+    const containerRect = containerRef.current.getBoundingClientRect();
+
+    labelsRef.current.forEach((label) => {
+      if (!label.element || !label.objectId) return;
+
+      try {
+        const obj = viz.getObject(label.objectId);
+        if (!obj) return;
+
+        const pos = obj.getPosition();
+        if (!pos || pos.length < 3) return;
+
+        const vector = new window.THREE.Vector3(pos[0], pos[1], pos[2]);
+        vector.project(camera);
+
+        const x = (vector.x * 0.5 + 0.5) * containerRect.width;
+        const y = (-(vector.y * 0.5) + 0.5) * containerRect.height;
+
+        // Check if behind camera or out of view
+        if (vector.z > 1 || x < 0 || x > containerRect.width || y < 0 || y > containerRect.height) {
+          label.element.style.display = "none";
+        } else {
+          label.element.style.display = "block";
+          label.element.style.left = `${x}px`;
+          label.element.style.top = `${y - 20}px`; // Offset above object
+          label.element.style.transform = "translate(-50%, -100%)";
+        }
+      } catch (error) {
+        console.error("Error updating label:", error);
+      }
+    });
+  };
+
+  // Clear all labels
+  const clearLabels = () => {
+    labelsRef.current.forEach((label) => {
+      if (label.element && label.element.parentNode) {
+        label.element.parentNode.removeChild(label.element);
+      }
+    });
+    labelsRef.current = [];
+  };
 
   useEffect(() => {
     if (!containerRef.current || vizRef.current || !window.Spacekit) return;
@@ -34,9 +111,9 @@ const SpacekitView = () => {
       });
 
       viz.createStars();
-      viz.createObject("sun", window.Spacekit.SpaceObjectPresets.SUN);
+      const sun = viz.createObject("sun", window.Spacekit.SpaceObjectPresets.SUN);
 
-      viz.createSphere("earth", {
+      const earth = viz.createSphere("earth", {
         textureUrl:
           "https://typpo.github.io/spacekit/examples/basic_asteroid_earth_flyby/earthtexture.jpg",
         radius: 0.01,
@@ -65,8 +142,16 @@ const SpacekitView = () => {
       viz.createLight([0, 0, 0]);
       viz.createAmbientLight();
 
+      // Add labels for Sun and Earth
+      const sunLabel = createLabel("☀️ Sun", "sun");
+      labelsRef.current.push(sunLabel);
+
+      const earthLabel = createLabel("🌍 Earth", "earth");
+      labelsRef.current.push(earthLabel);
+
       viz.onTick = () => {
         setCurrentDate(viz.getDate());
+        updateLabels();
       };
 
       setStatusMessage("Ready - Select an asteroid");
@@ -74,6 +159,7 @@ const SpacekitView = () => {
       vizRef.current = viz;
 
       return () => {
+        clearLabels();
         if (vizRef.current) {
           vizRef.current = null;
         }
@@ -87,6 +173,19 @@ const SpacekitView = () => {
     if (!vizRef.current || !selectedAsteroid) return;
 
     const viz = vizRef.current;
+
+    // Clear previous asteroid labels (keep Sun and Earth labels)
+    labelsRef.current = labelsRef.current.filter((label) => {
+      if (label.text.includes("Sun") || label.text.includes("Earth")) {
+        return true; // Keep Sun and Earth labels
+      } else {
+        // Remove asteroid labels
+        if (label.element && label.element.parentNode) {
+          label.element.parentNode.removeChild(label.element);
+        }
+        return false;
+      }
+    });
 
     if (currentAsteroidRef.current) {
       currentAsteroidRef.current = null;
@@ -159,6 +258,14 @@ const SpacekitView = () => {
 
           currentAsteroidRef.current = obj;
 
+          // Add label for asteroid
+          const asteroidIcon = selectedAsteroid.is_potentially_hazardous ? "⚠️" : "☄️";
+          const asteroidLabel = createLabel(
+            `${asteroidIcon} ${selectedAsteroid.name}`,
+            `asteroid_${selectedAsteroid.id}`
+          );
+          labelsRef.current.push(asteroidLabel);
+
           viz.getViewer().followObject(obj, [-0.01, -0.01, 0.01]);
 
           setStatusMessage(
@@ -222,6 +329,15 @@ const SpacekitView = () => {
           obj.initRotation();
           obj.startRotation();
           currentAsteroidRef.current = obj;
+          
+          // Add label for approximate orbit asteroid
+          const asteroidIcon = selectedAsteroid.is_potentially_hazardous ? "⚠️" : "☄️";
+          const asteroidLabel = createLabel(
+            `${asteroidIcon} ${selectedAsteroid.name}`,
+            `asteroid_${selectedAsteroid.id}`
+          );
+          labelsRef.current.push(asteroidLabel);
+          
           viz.getViewer().followObject(obj, [-0.01, -0.01, 0.01]);
           setStatusMessage(
             `${selectedAsteroid.name} - Approximate (no NASA data)`
@@ -283,146 +399,177 @@ const SpacekitView = () => {
         style={{ width: "100%", height: "100%", background: "#000" }}
       />
 
-      {/* Control Panel (shadcn style) */}
+      {/* Modern Horizontal Time Control Panel (Bottom Center) */}
       <div
         style={{
           position: "absolute",
-          top: "1rem",
-          right: "1rem",
-          background: "#18181b",
-          border: "1px solid #27272a",
-          padding: "1rem",
-          borderRadius: "0.5rem",
-          fontSize: "0.875rem",
+          bottom: "1.5rem",
+          left: "50%",
+          transform: "translateX(-50%)",
+          background: "linear-gradient(135deg, rgba(24, 24, 27, 0.95) 0%, rgba(39, 39, 42, 0.95) 100%)",
+          backdropFilter: "blur(12px)",
+          border: "1px solid #3f3f46",
+          padding: "0.625rem 2rem",
+          borderRadius: "9999px",
+          fontSize: "0.813rem",
           fontFamily: "'Poppins', system-ui, -apple-system, sans-serif",
           zIndex: 100,
-          minWidth: "240px",
           color: "#fafafa",
-          boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+          boxShadow: "0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 10px 10px -5px rgba(0, 0, 0, 0.2)",
+          display: "flex",
+          alignItems: "center",
+          gap: "2rem",
+          minWidth: "fit-content",
         }}
       >
-        <div style={{ marginBottom: "1rem" }}>
-          <div
-            style={{
-              fontWeight: "600",
-              color: "#fafafa",
-              marginBottom: "0.25rem",
-            }}
-          >
-            Current Date
-          </div>
-          <div style={{ color: "#a1a1aa", fontSize: "0.813rem" }}>
+        {/* Date Display */}
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          gap: "0.5rem",
+          paddingRight: "1.5rem",
+          borderRight: "1px solid #3f3f46"
+        }}>
+          <Clock size={14} style={{ color: "#a1a1aa", flexShrink: 0 }} />
+          <div style={{ 
+            fontWeight: "600", 
+            color: "#fafafa", 
+            fontSize: "0.75rem",
+            lineHeight: "1",
+            whiteSpace: "nowrap"
+          }}>
             {currentDate.toLocaleDateString("en-US", {
-              year: "numeric",
               month: "short",
               day: "numeric",
+              year: "numeric",
             })}
           </div>
         </div>
 
-        <div
-          style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}
-        >
+        {/* Control Buttons */}
+        <div style={{ 
+          display: "flex", 
+          alignItems: "center", 
+          gap: "0.625rem" 
+        }}>
           <button
             onClick={handleSlower}
             style={{
-              padding: "0.5rem 0.75rem",
-              background: "transparent",
-              border: "1px solid #27272a",
-              borderRadius: "0.375rem",
+              padding: "0.375rem 0.75rem",
+              background: "rgba(39, 39, 42, 0.6)",
+              border: "1px solid #3f3f46",
+              borderRadius: "9999px",
               cursor: "pointer",
-              fontSize: "0.813rem",
+              fontSize: "0.688rem",
               color: "#a1a1aa",
-              transition: "all 0.15s ease",
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
               display: "flex",
               alignItems: "center",
-              gap: "0.5rem",
+              gap: "0.25rem",
+              fontWeight: "500",
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = "#27272a";
-              e.target.style.color = "#fafafa";
+              e.currentTarget.style.background = "#3f3f46";
+              e.currentTarget.style.color = "#fafafa";
+              e.currentTarget.style.transform = "translateY(-2px)";
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = "transparent";
-              e.target.style.color = "#a1a1aa";
+              e.currentTarget.style.background = "rgba(39, 39, 42, 0.6)";
+              e.currentTarget.style.color = "#a1a1aa";
+              e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            <ChevronLeft size={14} />
-            <ChevronLeft size={14} />
+            <ChevronLeft size={12} />
+            <ChevronLeft size={12} style={{ marginLeft: "-0.5rem" }} />
             <span>Slower</span>
           </button>
+
           <button
             onClick={handleFaster}
             style={{
-              padding: "0.5rem 0.75rem",
-              background: "transparent",
-              border: "1px solid #27272a",
-              borderRadius: "0.375rem",
+              padding: "0.375rem 0.75rem",
+              background: "rgba(39, 39, 42, 0.6)",
+              border: "1px solid #3f3f46",
+              borderRadius: "9999px",
               cursor: "pointer",
-              fontSize: "0.813rem",
+              fontSize: "0.688rem",
               color: "#a1a1aa",
-              transition: "all 0.15s ease",
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
               display: "flex",
               alignItems: "center",
-              gap: "0.5rem",
+              gap: "0.25rem",
+              fontWeight: "500",
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = "#27272a";
-              e.target.style.color = "#fafafa";
+              e.currentTarget.style.background = "#3f3f46";
+              e.currentTarget.style.color = "#fafafa";
+              e.currentTarget.style.transform = "translateY(-2px)";
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = "transparent";
-              e.target.style.color = "#a1a1aa";
+              e.currentTarget.style.background = "rgba(39, 39, 42, 0.6)";
+              e.currentTarget.style.color = "#a1a1aa";
+              e.currentTarget.style.transform = "translateY(0)";
             }}
           >
             <span>Faster</span>
-            <ChevronRight size={14} />
-            <ChevronRight size={14} />
+            <ChevronRight size={12} style={{ marginRight: "-0.5rem" }} />
+            <ChevronRight size={12} />
           </button>
+
           <button
             onClick={handleSetTime}
             style={{
-              padding: "0.5rem 0.75rem",
-              background: "transparent",
-              border: "1px solid #27272a",
-              borderRadius: "0.375rem",
+              padding: "0.375rem 0.875rem",
+              background: "rgba(59, 130, 246, 0.15)",
+              border: "1px solid rgba(59, 130, 246, 0.3)",
+              borderRadius: "9999px",
               cursor: "pointer",
-              fontSize: "0.813rem",
-              color: "#a1a1aa",
-              transition: "all 0.15s ease",
+              fontSize: "0.688rem",
+              color: "#60a5fa",
+              transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
+              fontWeight: "500",
+              whiteSpace: "nowrap"
             }}
             onMouseEnter={(e) => {
-              e.target.style.background = "#27272a";
-              e.target.style.color = "#fafafa";
+              e.currentTarget.style.background = "rgba(59, 130, 246, 0.25)";
+              e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.5)";
+              e.currentTarget.style.color = "#93c5fd";
+              e.currentTarget.style.transform = "translateY(-2px)";
             }}
             onMouseLeave={(e) => {
-              e.target.style.background = "transparent";
-              e.target.style.color = "#a1a1aa";
+              e.currentTarget.style.background = "rgba(59, 130, 246, 0.15)";
+              e.currentTarget.style.borderColor = "rgba(59, 130, 246, 0.3)";
+              e.currentTarget.style.color = "#60a5fa";
+              e.currentTarget.style.transform = "translateY(0)";
             }}
           >
-            <Clock size={14} />
-            <span>Set Time</span>
+            Set to Approach Date
           </button>
         </div>
 
-        <div
-          style={{
-            marginTop: "1rem",
-            paddingTop: "0.75rem",
-            borderTop: "1px solid #27272a",
-            fontSize: "0.813rem",
-          }}
-        >
-          <div
-            style={{
-              fontWeight: "600",
-              color: "#fafafa",
-              marginBottom: "0.25rem",
-            }}
-          >
-            Status
-          </div>
-          <div style={{ color: "#a1a1aa", fontSize: "0.75rem" }}>
+        {/* Status Indicator */}
+        <div style={{
+          paddingLeft: "1.5rem",
+          borderLeft: "1px solid #3f3f46",
+          display: "flex",
+          alignItems: "center",
+          gap: "0.5rem"
+        }}>
+          <div style={{
+            width: "5px",
+            height: "5px",
+            borderRadius: "50%",
+            background: statusMessage.includes("Ready") ? "#22c55e" : 
+                       statusMessage.includes("Loading") ? "#f59e0b" : "#3b82f6",
+            boxShadow: statusMessage.includes("Ready") ? "0 0 6px #22c55e" : 
+                      statusMessage.includes("Loading") ? "0 0 6px #f59e0b" : "0 0 6px #3b82f6",
+          }} />
+          <div style={{ 
+            color: "#a1a1aa", 
+            fontSize: "0.688rem",
+            fontWeight: "500",
+            whiteSpace: "nowrap"
+          }}>
             {statusMessage}
           </div>
         </div>

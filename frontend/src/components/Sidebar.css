@@ -1198,6 +1198,257 @@ h3 {
   border: 1px solid #78350f;
 }
 
+/* Impact Results Visual Panel */
+.impact-results-panel {
+  background: linear-gradient(135deg, #18181b 0%, #27272a 100%);
+  border: 1px solid #3f3f46;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  animation: fadeIn 0.3s ease;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+}
+
+.impact-results-header {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.875rem;
+  border-bottom: 1px solid #3f3f46;
+}
+
+.impact-warning-icon {
+  color: #ef4444;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.impact-results-header h3 {
+  margin: 0;
+  font-size: 0.938rem;
+  font-weight: 700;
+  color: #fafafa;
+  letter-spacing: 0.025em;
+}
+
+.impact-visual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.impact-card {
+  background: #09090b;
+  border: 1px solid #27272a;
+  border-radius: 0.625rem;
+  padding: 1rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.impact-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, currentColor, transparent);
+  opacity: 0.5;
+}
+
+.impact-card.energy-card::before {
+  color: #f59e0b;
+}
+
+.impact-card.crater-card::before {
+  color: #8b5cf6;
+}
+
+.impact-card.casualties-card::before {
+  color: #ef4444;
+}
+
+.impact-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+  border-color: #3f3f46;
+}
+
+.impact-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 0.5rem;
+  margin-bottom: 0.875rem;
+  background: rgba(39, 39, 42, 0.6);
+  border: 1px solid #3f3f46;
+}
+
+.energy-card .impact-card-icon {
+  color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+
+.crater-card .impact-card-icon {
+  color: #8b5cf6;
+  background: rgba(139, 92, 246, 0.1);
+}
+
+.casualties-card .impact-card-icon {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.impact-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.impact-card-label {
+  font-size: 0.688rem;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.impact-card-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #fafafa;
+  line-height: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.impact-card-value.casualties {
+  font-size: 1.5rem;
+}
+
+.impact-card-unit {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #71717a;
+  margin-left: 0.25rem;
+}
+
+.impact-card-sublabel {
+  font-size: 0.75rem;
+  color: #71717a;
+}
+
+.impact-comparison-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.comparison-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: rgba(59, 130, 246, 0.2);
+  border-radius: 0.375rem;
+  color: #60a5fa;
+}
+
+.comparison-text {
+  font-size: 0.813rem;
+  color: #93c5fd;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.impact-severity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1rem;
+  border-radius: 0.5rem;
+  border: 1px solid;
+}
+
+.impact-severity.moderate {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.3);
+}
+
+.impact-severity.major {
+  background: rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+}
+
+.impact-severity.severe {
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+.impact-severity.catastrophic {
+  background: rgba(127, 29, 29, 0.3);
+  border-color: rgba(153, 27, 27, 0.5);
+}
+
+.severity-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.impact-severity.moderate .severity-label {
+  color: #86efac;
+}
+
+.impact-severity.major .severity-label {
+  color: #fbbf24;
+}
+
+.impact-severity.severe .severity-label {
+  color: #fca5a5;
+}
+
+.impact-severity.catastrophic .severity-label {
+  color: #fca5a5;
+}
+
+.severity-value {
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+
+.impact-severity.moderate .severity-value {
+  color: #22c55e;
+}
+
+.impact-severity.major .severity-value {
+  color: #f59e0b;
+}
+
+.impact-severity.severe .severity-value {
+  color: #ef4444;
+}
+
+.impact-severity.catastrophic .severity-value {
+  color: #ef4444;
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .sidebar {

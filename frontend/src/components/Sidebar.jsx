@@ -7,7 +7,7 @@ import {
   simulateRealImpact,
   calculateDeflection,
 } from "../services/api";
-import { Ruler, Zap, Calendar, AlertTriangle, ChevronDown, Search, X, Filter, Trash2, Database, MapPin, Shield, Rocket } from "lucide-react";
+import { Ruler, Zap, Calendar, AlertTriangle, ChevronDown, Search, X, Filter, Trash2, Database, MapPin, Shield, Rocket, Skull, Mountain, Flame, Users } from "lucide-react";
 import "./Sidebar.css";
 
 const Sidebar = () => {
@@ -628,27 +628,85 @@ const Sidebar = () => {
         </button>
       )}
 
-      {/* Results Panel */}
+      {/* Impact Results Visual Panel */}
       {impactResults && (
-        <div className="results-panel">
-          <h3>Impact Results</h3>
-          <div className="result-item">
-            <strong>Energy:</strong> {impactResults.energy_megatons.toFixed(1)}{" "}
-            megatons
+        <div className="impact-results-panel">
+          <div className="impact-results-header">
+            <AlertTriangle size={18} className="impact-warning-icon" />
+            <h3>Impact Simulation Results</h3>
           </div>
-          <div className="result-item">
-            <strong>Crater:</strong>{" "}
-            {impactResults.crater_diameter_km.toFixed(2)} km diameter
+
+          <div className="impact-visual-grid">
+            {/* Energy Card */}
+            <div className="impact-card energy-card">
+              <div className="impact-card-icon">
+                <Flame size={24} />
+              </div>
+              <div className="impact-card-content">
+                <div className="impact-card-label">Impact Energy</div>
+                <div className="impact-card-value">
+                  {impactResults.energy_megatons.toFixed(1)}
+                  <span className="impact-card-unit">MT</span>
+                </div>
+                <div className="impact-card-sublabel">Megatons TNT</div>
+              </div>
+            </div>
+
+            {/* Crater Card */}
+            <div className="impact-card crater-card">
+              <div className="impact-card-icon">
+                <Mountain size={24} />
+              </div>
+              <div className="impact-card-content">
+                <div className="impact-card-label">Crater Size</div>
+                <div className="impact-card-value">
+                  {impactResults.crater_diameter_km.toFixed(2)}
+                  <span className="impact-card-unit">km</span>
+                </div>
+                <div className="impact-card-sublabel">
+                  Depth: {impactResults.crater_depth_km.toFixed(2)} km
+                </div>
+              </div>
+            </div>
+
+            {/* Casualties Card */}
+            <div className="impact-card casualties-card">
+              <div className="impact-card-icon">
+                <Skull size={24} />
+              </div>
+              <div className="impact-card-content">
+                <div className="impact-card-label">Estimated Casualties</div>
+                <div className="impact-card-value casualties">
+                  {impactResults.deaths_estimated.toLocaleString()}
+                </div>
+                <div className="impact-card-sublabel">Deaths</div>
+              </div>
+            </div>
           </div>
-          <div className="result-item">
-            <strong>Depth:</strong> {impactResults.crater_depth_km.toFixed(2)}{" "}
-            km
+
+          {/* Comparison Banner */}
+          <div className="impact-comparison-banner">
+            <div className="comparison-icon">
+              <Zap size={16} />
+            </div>
+            <div className="comparison-text">
+              {impactResults.comparison}
+            </div>
           </div>
-          <div className="result-item">
-            <strong>Estimated Deaths:</strong>{" "}
-            {impactResults.deaths_estimated.toLocaleString()}
+
+          {/* Severity Indicator */}
+          <div className={`impact-severity ${
+            impactResults.energy_megatons > 1000 ? 'catastrophic' :
+            impactResults.energy_megatons > 100 ? 'severe' :
+            impactResults.energy_megatons > 10 ? 'major' : 'moderate'
+          }`}>
+            <div className="severity-label">Threat Level:</div>
+            <div className="severity-value">
+              {impactResults.energy_megatons > 1000 ? 'CATASTROPHIC' :
+               impactResults.energy_megatons > 100 ? 'SEVERE' :
+               impactResults.energy_megatons > 10 ? 'MAJOR' : 'MODERATE'}
+            </div>
           </div>
-          <div className="comparison">{impactResults.comparison}</div>
         </div>
       )}
     </div>
