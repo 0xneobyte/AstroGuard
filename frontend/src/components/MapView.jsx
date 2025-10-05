@@ -102,6 +102,55 @@ function MapClickHandler() {
   return null;
 }
 
+// Component to show marker for selected location (before simulation)
+function ImpactLocationMarker() {
+  const impactLocation = useStore((state) => state.impactLocation);
+  const impactResults = useStore((state) => state.impactResults);
+
+  // Only show this marker if location is set but no results yet
+  if (!impactLocation || impactResults) return null;
+
+  const { lat, lon } = impactLocation;
+
+  return (
+    <Marker position={[lat, lon]} icon={impactIcon}>
+      <Popup>
+        <div style={{ 
+          fontFamily: 'monospace', 
+          fontSize: '12px',
+          padding: '8px',
+          minWidth: '200px'
+        }}>
+          <div style={{ 
+            fontWeight: 'bold', 
+            fontSize: '14px', 
+            marginBottom: '8px',
+            color: '#ff0000'
+          }}>
+            📍 Selected Impact Location
+          </div>
+          <div style={{ marginBottom: '4px' }}>
+            <strong>Latitude:</strong> {lat.toFixed(6)}°
+          </div>
+          <div style={{ marginBottom: '4px' }}>
+            <strong>Longitude:</strong> {lon.toFixed(6)}°
+          </div>
+          <div style={{ 
+            marginTop: '8px', 
+            paddingTop: '8px', 
+            borderTop: '1px solid #ddd',
+            fontSize: '11px',
+            color: '#666',
+            fontStyle: 'italic'
+          }}>
+            Click "Simulate Impact" to see damage zones
+          </div>
+        </div>
+      </Popup>
+    </Marker>
+  );
+}
+
 function DamageZones() {
   const impactLocation = useStore((state) => state.impactLocation);
   const impactResults = useStore((state) => state.impactResults);
@@ -169,6 +218,34 @@ function DamageZones() {
 
 const MapView = () => {
   const impactLocation = useStore((state) => state.impactLocation);
+  const impactResults = useStore((state) => state.impactResults);
+
+  // Helper function to get zone display information
+  const getZoneInfo = (zone) => {
+    const zoneTypes = {
+      'crater': {
+        name: 'Crater',
+        description: 'Complete vaporization'
+      },
+      'total_destruction': {
+        name: 'Total Destruction',
+        description: '100% casualties'
+      },
+      'severe_damage': {
+        name: 'Severe Damage',
+        description: 'Major structural damage'
+      },
+      'moderate_damage': {
+        name: 'Moderate Damage',
+        description: 'Infrastructure damage'
+      },
+      'thermal_burns': {
+        name: 'Thermal Burns',
+        description: '3rd degree burns'
+      }
+    };
+    return zoneTypes[zone.type] || { name: zone.type, description: 'Affected area' };
+  };
 
   return (
     <div style={{ width: '100%', height: '100%', position: 'relative' }}>
@@ -183,6 +260,7 @@ const MapView = () => {
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         />
         <MapClickHandler />
+        <ImpactLocationMarker />
         <DamageZones />
       </MapContainer>
 
@@ -211,7 +289,9 @@ const MapView = () => {
         </div>
       )}
 
-      {/* Coordinate display when impact location is set */}
+      {/* Coordinate display when impact location is set - COMMENTED OUT FOR FUTURE POPULATION API */}
+      {/* TODO: Integrate population API here to show affected population data */}
+      {/* 
       {impactLocation && (
         <div
           style={{
@@ -262,6 +342,101 @@ const MapView = () => {
             textAlign: 'center'
           }}>
             Ready for population API query
+          </div>
+        </div>
+      )}
+      */}
+
+      {/* Damage Zones Legend - Only show when impact results are available */}
+      {impactResults && impactResults.damage_zones && (
+        <div
+          style={{
+            position: 'absolute',
+            top: '20px',
+            right: '20px',
+            background: 'rgba(0, 0, 0, 0.9)',
+            color: 'white',
+            padding: '12px 14px',
+            borderRadius: '8px',
+            zIndex: 1000,
+            fontFamily: 'Poppins, sans-serif',
+            fontSize: '11px',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.4)',
+            border: '1px solid rgba(255, 255, 255, 0.15)',
+            minWidth: '200px',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          <div style={{ 
+            fontWeight: '700', 
+            marginBottom: '10px',
+            fontSize: '12px',
+            color: '#fafafa',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            paddingBottom: '6px',
+          }}>
+            <span style={{ fontSize: '14px' }}>⚠️</span>
+            Damage Zones
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+            {impactResults.damage_zones.map((zone, index) => {
+              const zoneInfo = getZoneInfo(zone);
+              return (
+                <div 
+                  key={index}
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px',
+                    padding: '4px',
+                  }}
+                >
+                  <div style={{
+                    width: '16px',
+                    height: '16px',
+                    borderRadius: '50%',
+                    backgroundColor: zone.color,
+                    border: `2px solid ${zone.color}`,
+                    opacity: 0.7,
+                    flexShrink: 0,
+                  }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ 
+                      fontWeight: '600', 
+                      fontSize: '10px',
+                      color: '#fafafa',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}>
+                      {zoneInfo.name}
+                    </div>
+                    <div style={{ 
+                      fontSize: '9px',
+                      color: '#a1a1aa',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}>
+                      {zoneInfo.description}
+                    </div>
+                  </div>
+                  <div style={{
+                    fontSize: '9px',
+                    fontWeight: '600',
+                    color: '#71717a',
+                    fontFamily: 'monospace',
+                    flexShrink: 0,
+                    whiteSpace: 'nowrap',
+                  }}>
+                    {zone.radius_km.toFixed(1)}km
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

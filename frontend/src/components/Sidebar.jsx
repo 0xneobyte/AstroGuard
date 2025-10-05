@@ -7,10 +7,10 @@ import {
   simulateRealImpact,
   calculateDeflection,
 } from "../services/api";
-import { Ruler, Zap, Calendar, AlertTriangle, ChevronDown, Search, X, Filter, Trash2, Database, MapPin, Shield, Rocket, Skull, Mountain, Flame, Users, Eye } from "lucide-react";
+import { Ruler, Zap, Calendar, AlertTriangle, ChevronDown, Search, X, Filter, Trash2, Database, MapPin, Shield, Rocket, Skull, Mountain, Flame, Users, Eye, Map } from "lucide-react";
 import "./Sidebar.css";
 
-const Sidebar = () => {
+const Sidebar = ({ activeTab, setActiveTab }) => {
   const mode = useStore((state) => state.mode);
   const setMode = useStore((state) => state.setMode);
   const asteroids = useStore((state) => state.asteroids);
@@ -18,6 +18,7 @@ const Sidebar = () => {
   const selectedAsteroid = useStore((state) => state.selectedAsteroid);
   const setSelectedAsteroid = useStore((state) => state.setSelectedAsteroid);
   const impactLocation = useStore((state) => state.impactLocation);
+  const setImpactLocation = useStore((state) => state.setImpactLocation);
   const impactResults = useStore((state) => state.impactResults);
   const setImpactResults = useStore((state) => state.setImpactResults);
   const simulatorParams = useStore((state) => state.simulatorParams);
@@ -36,6 +37,9 @@ const Sidebar = () => {
   const [selectedAsteroids, setSelectedAsteroids] = useState([]); // Track multiple selections
   const [deflectionResults, setDeflectionResults] = useState(null);
   const [showDeflectionPanel, setShowDeflectionPanel] = useState(false);
+  
+  // Separate state for simulator asteroid selection (doesn't affect Real Threats)
+  const [simulatorAsteroid, setSimulatorAsteroid] = useState(null);
 
   // Fetch asteroids on mount
   useEffect(() => {
@@ -199,7 +203,18 @@ const Sidebar = () => {
 
   const handleSimulateImpact = async () => {
     if (!impactLocation) {
-      alert("Please click on the map to select an impact location");
+      if (mode === "SIMULATOR") {
+        // More helpful message for simulator mode with option to navigate
+        const goToMap = window.confirm(
+          "Please select an impact location first!\n\n" +
+          "Click OK to go to the Impact Map and choose where the asteroid will strike."
+        );
+        if (goToMap && setActiveTab) {
+          setActiveTab("map");
+        }
+      } else {
+        alert("Please click on the map to select an impact location");
+      }
       return;
     }
 
@@ -229,19 +244,36 @@ const Sidebar = () => {
     }
   };
 
+  // Handler for mode switching - clears impact location when going to Real Threats
+  const handleModeSwitch = (newMode) => {
+    setMode(newMode);
+    if (newMode === "THREATS") {
+      // Clear impact location and results when switching to Real Threats
+      if (impactLocation) {
+        setImpactLocation(null);
+        setImpactResults(null);
+      }
+      // Switch to 3D view for Real Threats
+      setActiveTab("3d");
+    } else if (newMode === "SIMULATOR") {
+      // Auto-switch to map view when entering Simulator mode
+      setActiveTab("map");
+    }
+  };
+
   return (
     <div className="sidebar">
       {/* Mode Switcher */}
       <div className="mode-switcher">
         <button
           className={mode === "THREATS" ? "active" : ""}
-          onClick={() => setMode("THREATS")}
+          onClick={() => handleModeSwitch("THREATS")}
         >
           REAL THREATS
         </button>
         <button
           className={mode === "SIMULATOR" ? "active" : ""}
-          onClick={() => setMode("SIMULATOR")}
+          onClick={() => handleModeSwitch("SIMULATOR")}
         >
           SIMULATOR
         </button>
@@ -608,6 +640,108 @@ const Sidebar = () => {
         <div className="simulator-mode">
           <h3>Custom Asteroid Simulator</h3>
 
+          {/* Asteroid Selector for Simulator */}
+          <div className="simulator-asteroid-selector">
+            <label style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.5rem',
+              fontSize: '0.875rem',
+              fontWeight: '500',
+              color: '#fafafa',
+              marginBottom: '1rem',
+            }}>
+              <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Rocket size={14} />
+                Select Real Asteroid (Optional)
+              </span>
+              <select
+                value={simulatorAsteroid?.id || ''}
+                onChange={(e) => {
+                  const asteroidId = e.target.value;
+                  if (asteroidId) {
+                    const asteroid = asteroids.find(a => a.id === asteroidId);
+                    if (asteroid) {
+                      setSimulatorAsteroid(asteroid);
+                      // Auto-populate simulator params based on asteroid
+                      if (asteroid.average_diameter_m) {
+                        setSimulatorParams({
+                          ...simulatorParams,
+                          size_m: Math.round(asteroid.average_diameter_m),
+                          speed_km_s: asteroid.close_approach_data[0]?.relative_velocity_km_s 
+                            ? Math.round(asteroid.close_approach_data[0].relative_velocity_km_s) 
+                            : simulatorParams.speed_km_s,
+                        });
+                      }
+                    }
+                  } else {
+                    setSimulatorAsteroid(null);
+                  }
+                }}
+                style={{
+                  background: '#18181b',
+                  border: '1px solid #3f3f46',
+                  borderRadius: '0.5rem',
+                  padding: '0.75rem',
+                  color: '#fafafa',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  outline: 'none',
+                }}
+              >
+                <option value="">Custom Parameters</option>
+                {asteroids.map((asteroid) => (
+                  <option key={asteroid.id} value={asteroid.id}>
+                    {asteroid.name} - {Math.round(asteroid.average_diameter_m)}m
+                    {asteroid.is_potentially_hazardous ? ' ⚠️' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {/* Navigation to Impact Map */}
+          {!impactLocation && (
+            <div className="map-navigation-banner">
+              <div className="map-nav-icon">
+                <MapPin size={20} />
+              </div>
+              <div className="map-nav-content">
+                <div className="map-nav-title">Select Impact Location</div>
+                <div className="map-nav-subtitle">
+                  Go to the Impact Map to choose where the asteroid will strike
+                </div>
+              </div>
+              <button
+                className="goto-map-btn"
+                onClick={() => setActiveTab("map")}
+              >
+                <Map size={16} />
+                Go to Map
+              </button>
+            </div>
+          )}
+
+          {/* Impact Location Confirmation */}
+          {impactLocation && (
+            <div className="impact-location-card">
+              <div className="location-card-header">
+                <MapPin size={16} className="location-icon" />
+                <span className="location-title">Impact Location Set</span>
+              </div>
+              <div className="location-coordinates">
+                <span>Lat: {impactLocation.lat.toFixed(4)}°</span>
+                <span>Lon: {impactLocation.lon.toFixed(4)}°</span>
+              </div>
+              <button
+                className="change-location-btn"
+                onClick={() => setActiveTab("map")}
+              >
+                Change Location
+              </button>
+            </div>
+          )}
+
           <div className="controls">
             <label>
               Size: {simulatorParams.size_m}m
@@ -660,8 +794,8 @@ const Sidebar = () => {
         </div>
       )}
 
-      {/* Simulate Button */}
-      {impactLocation && (
+      {/* Simulate Button - Always visible in SIMULATOR mode */}
+      {mode === "SIMULATOR" && (
         <button
           className="simulate-btn"
           onClick={handleSimulateImpact}
