@@ -643,6 +643,177 @@ async def calculate_deflection_endpoint(
     return result
 
 
+# AI Chat Models
+class AIChatRequest(BaseModel):
+    message: str
+    context: dict
+    history: List[dict] = []
+
+
+class AISummaryRequest(BaseModel):
+    context: dict
+
+
+@app.post("/api/ai/chat")
+async def ai_chat(request: AIChatRequest):
+    """
+    AI-powered chat about asteroid data and impacts.
+    """
+    try:
+        import openai
+        
+        # Get OpenAI API key from environment
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not openai_api_key:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="OpenAI API key not configured"
+            )
+        
+        # Create OpenAI client
+        client = openai.OpenAI(api_key=openai_api_key)
+        
+        # Build system prompt with context
+        system_prompt = """You are an expert AI assistant for ASTROGUARD, an asteroid impact simulation and defense system. 
+You help users understand asteroid threats, impact physics, and planetary defense strategies.
+
+Be concise, informative, and accurate. Use scientific terms but explain them clearly.
+When discussing impacts, be realistic about the dangers but also educational.
+If asked about deflection strategies, explain the physics and practicality."""
+
+        # Add context to system prompt
+        if request.context.get("asteroid"):
+            ast = request.context["asteroid"]
+            system_prompt += f"\n\nCurrent Asteroid: {ast.get('name', 'Unknown')}"
+            system_prompt += f"\n- Diameter: {ast.get('diameter_min', 0):.1f} - {ast.get('diameter_max', 0):.1f} meters"
+            system_prompt += f"\n- Velocity: {ast.get('velocity', 0):.2f} km/s"
+            system_prompt += f"\n- Potentially Hazardous: {'Yes' if ast.get('is_hazardous') else 'No'}"
+            if ast.get('close_approach_date'):
+                system_prompt += f"\n- Close Approach: {ast.get('close_approach_date')}"
+        
+        if request.context.get("impact"):
+            imp = request.context["impact"]
+            system_prompt += f"\n\nSimulated Impact Results:"
+            system_prompt += f"\n- Energy: {imp.get('energy_megatons', 0):.2f} megatons TNT"
+            system_prompt += f"\n- Crater: {imp.get('crater_diameter_km', 0):.2f} km diameter"
+            system_prompt += f"\n- Fireball: {imp.get('fireball_radius_km', 0):.2f} km radius"
+            system_prompt += f"\n- Blast radius: {imp.get('blast_radius_km', 0):.2f} km"
+            system_prompt += f"\n- Severity: {imp.get('severity', 'Unknown')}"
+        
+        # Build messages array
+        messages = [{"role": "system", "content": system_prompt}]
+        
+        # Add conversation history (last 6 messages)
+        for msg in request.history[-6:]:
+            messages.append({
+                "role": msg.get("role", "user"),
+                "content": msg.get("content", "")
+            })
+        
+        # Add current message
+        messages.append({"role": "user", "content": request.message})
+        
+        # Call OpenAI API
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",  # Using GPT-4o-mini for cost efficiency
+            messages=messages,
+            max_tokens=500,
+            temperature=0.7,
+        )
+        
+        return {
+            "response": response.choices[0].message.content
+        }
+        
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="OpenAI library not installed. Run: pip install openai"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI chat error: {str(e)}"
+        )
+
+
+@app.post("/api/ai/summary")
+async def ai_summary(request: AISummaryRequest):
+    """
+    Generate an AI summary of asteroid data and impact.
+    """
+    try:
+        import openai
+        
+        # Get OpenAI API key from environment
+        openai_api_key = os.getenv("OPENAI_API_KEY")
+        if not openai_api_key:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="OpenAI API key not configured"
+            )
+        
+        # Create OpenAI client
+        client = openai.OpenAI(api_key=openai_api_key)
+        
+        # Build detailed prompt for summary
+        prompt = "Generate a comprehensive but concise summary of this asteroid threat scenario:\n\n"
+        
+        if request.context.get("asteroid"):
+            ast = request.context["asteroid"]
+            prompt += f"Asteroid: {ast.get('name', 'Unknown')}\n"
+            prompt += f"Size: {ast.get('diameter_min', 0):.1f} - {ast.get('diameter_max', 0):.1f} meters diameter\n"
+            prompt += f"Velocity: {ast.get('velocity', 0):.2f} km/s\n"
+            prompt += f"Hazardous Classification: {'Potentially Hazardous' if ast.get('is_hazardous') else 'Non-Hazardous'}\n"
+            if ast.get('close_approach_date'):
+                prompt += f"Close Approach Date: {ast.get('close_approach_date')}\n"
+            if ast.get('miss_distance'):
+                prompt += f"Miss Distance: {float(ast.get('miss_distance', 0)):,.0f} km\n"
+        
+        if request.context.get("impact"):
+            imp = request.context["impact"]
+            prompt += f"\nImpact Simulation:\n"
+            prompt += f"Impact Energy: {imp.get('energy_megatons', 0):.2f} megatons TNT equivalent\n"
+            prompt += f"Crater Diameter: {imp.get('crater_diameter_km', 0):.2f} km\n"
+            prompt += f"Fireball Radius: {imp.get('fireball_radius_km', 0):.2f} km\n"
+            prompt += f"Blast Radius (overpressure): {imp.get('blast_radius_km', 0):.2f} km\n"
+            prompt += f"Thermal Radiation: {imp.get('thermal_radius_km', 0):.2f} km radius\n"
+            prompt += f"Seismic Effect: {imp.get('seismic_magnitude', 0):.1f} magnitude\n"
+            prompt += f"Severity: {imp.get('severity', 'Unknown')}\n"
+        
+        if request.context.get("location"):
+            loc = request.context["location"]
+            prompt += f"\nImpact Location: {loc.get('latitude', 0):.4f}°, {loc.get('longitude', 0):.4f}°\n"
+        
+        prompt += "\nProvide:\n1. A brief threat assessment\n2. Key impact characteristics\n3. Potential consequences\n4. Recommended mitigation approach if applicable\n\nBe scientific but accessible. Keep it under 200 words."
+        
+        # Call OpenAI API
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are an expert asteroid impact analyst for ASTROGUARD. Provide clear, concise, scientific analysis."},
+                {"role": "user", "content": prompt}
+            ],
+            max_tokens=400,
+            temperature=0.7,
+        )
+        
+        return {
+            "summary": response.choices[0].message.content
+        }
+        
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="OpenAI library not installed. Run: pip install openai"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"AI summary error: {str(e)}"
+        )
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=5000)
