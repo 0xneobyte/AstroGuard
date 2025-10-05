@@ -53,41 +53,8 @@ npm run dev  # Runs on http://localhost:5173
 **Physics**: Validated against historical impact events using peer-reviewed formulas
 
 ## System Architecture
+<img width="4497" height="1188" alt="image" src="https://github.com/user-attachments/assets/cb733e6d-45ec-430b-aab3-9c00a48c638a" />
 
-```mermaid
-graph TB
-    A[NASA NEO API] --> B[AstroGuard Backend]
-    C[WorldPop API] --> B
-    D[User Input] --> E[React Frontend]
-    E --> B
-    B --> F[Physics Engine]
-    F --> G[Collins Crater Scaling]
-    F --> H[Population Analysis]
-    F --> I[Impact Simulation]
-    B --> J[3D Visualization]
-    B --> K[2D Impact Maps]
-    B --> L[AI Assistant]
-
-    subgraph "Data Sources"
-        A
-        C
-        M[Historical Events<br/>Tunguska, Chelyabinsk]
-    end
-
-    subgraph "Scientific Models"
-        G
-        N[Atmospheric Entry]
-        O[Orbital Mechanics]
-        P[Casualty Estimation]
-    end
-
-    subgraph "User Interface"
-        E
-        J
-        K
-        L
-    end
-```
 
 ## API Example
 
@@ -111,12 +78,12 @@ Response:
 
 ## Challenge Objectives Met
 
-✅ Interactive visualization tool with 3D asteroid trajectories  
-✅ NASA NEO API integration with real asteroid characteristics  
-✅ USGS dataset integration for environmental impact modeling  
-✅ Physics-based impact consequence prediction  
-✅ Mitigation strategy evaluation and visualization  
-✅ Multi-audience accessibility (scientists to public)
+- Interactive visualization tool with 3D asteroid trajectories  
+- NASA NEO API integration with real asteroid characteristics  
+- USGS dataset integration for environmental impact modeling  
+- Physics-based impact consequence prediction  
+- Mitigation strategy evaluation and visualization  
+- Multi-audience accessibility (scientists to public)
 
 ---
 
