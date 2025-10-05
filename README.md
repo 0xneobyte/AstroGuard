@@ -1,4 +1,9 @@
-# AstroGuard - Near-Earth Asteroid Threat Assessment System
+<img width="5088" height="3356" alt="image" src="https://github.com/user-attachments/assets/eb59c751-79ae-45fd-aa47-6a7ea2943918" /># AstroGuard - Near-Earth Asteroid Threat Assessment System
+  <a href="https://deepwiki.com/0xneobyte/AstroGuard">
+    <img alt="Ask DeepWiki" src="https://deepwiki.com/badge.svg" />
+  </a>
+<img width="5088" height="3356" alt="image" src="https://github.com/user-attachments/assets/f8ccf396-b35b-457e-ab7a-e3f3310ac7a4" />
+
 
 **NASA Space Apps Challenge 2025 "Meteor Madness" Submission**
 
