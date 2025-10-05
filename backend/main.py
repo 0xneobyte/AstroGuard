@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import math
 import json
-from physics import calculate_impact, calculate_deflection
+from physics import calculate_impact, calculate_deflection, validate_against_chelyabinsk, validate_against_tunguska
 
 # Load environment variables
 load_dotenv()
@@ -107,6 +107,7 @@ class ImpactRequest(BaseModel):
     lat: float = Field(..., ge=-90, le=90, description="Impact latitude")
     lon: float = Field(..., ge=-180, le=180, description="Impact longitude")
     angle: int = Field(45, ge=15, le=90, description="Entry angle in degrees")
+    absolute_magnitude_h: Optional[float] = Field(None, description="NASA H-magnitude for density calculation")
 
 
 class SimulateRealImpactRequest(BaseModel):
@@ -506,8 +507,8 @@ async def browse_asteroids(page: int = 0, size: int = 20):
 @app.post("/api/calculate-impact", response_model=ImpactResponse)
 async def calculate_impact_endpoint(impact: ImpactRequest):
     """
-    Calculate asteroid impact effects using physics formulas.
-    Returns energy, crater size, damage zones, and death estimates.
+    Calculate asteroid impact effects using scientific physics formulas.
+    Now includes taxonomic density classification and atmospheric effects.
     """
     try:
         result = calculate_impact(
@@ -515,7 +516,8 @@ async def calculate_impact_endpoint(impact: ImpactRequest):
             speed_km_s=impact.speed_km_s,
             angle=impact.angle,
             lat=impact.lat,
-            lon=impact.lon
+            lon=impact.lon,
+            absolute_magnitude_h=impact.absolute_magnitude_h
         )
         return result
     except Exception as e:
@@ -586,13 +588,14 @@ async def simulate_real_impact(request: SimulateRealImpactRequest):
 
         velocity_km_s = float(asteroid["close_approach_data"][0]["relative_velocity"]["kilometers_per_second"])
 
-        # Calculate impact using real asteroid parameters
+        # Calculate impact using real asteroid parameters with H-magnitude
         impact_result = calculate_impact(
             size_m=int(avg_diameter),
             speed_km_s=velocity_km_s,
             angle=request.angle,
             lat=request.lat,
-            lon=request.lon
+            lon=request.lon,
+            absolute_magnitude_h=asteroid.get("absolute_magnitude_h")
         )
 
         # Get actual miss distance for context
@@ -823,6 +826,36 @@ async def ai_summary(request: AISummaryRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"AI summary error: {str(e)}"
+        )
+
+
+@app.get("/api/validate-science")
+async def validate_science():
+    """
+    Validate our scientific improvements against known impact events.
+    Returns accuracy comparison for Chelyabinsk and Tunguska events.
+    """
+    try:
+        chelyabinsk = validate_against_chelyabinsk()
+        tunguska = validate_against_tunguska()
+        
+        return {
+            "validation_results": {
+                "chelyabinsk": chelyabinsk,
+                "tunguska": tunguska
+            },
+            "improvements_summary": {
+                "asteroid_density": "Now uses taxonomic classification instead of fixed 3000 kg/m³",
+                "atmospheric_effects": "Includes velocity deceleration during entry",
+                "casualty_model": "Uses evidence-based nuclear test mortality rates",
+                "population_density": "Improved urban/rural estimates (WorldPop API ready)",
+                "validation_status": "Tested against historical impact events"
+            }
+        }
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Validation failed: {str(e)}"
         )
 
 

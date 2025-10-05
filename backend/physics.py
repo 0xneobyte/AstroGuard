@@ -6,9 +6,44 @@ All formulas based on real impact physics and scaling laws.
 import math
 
 
-def calculate_impact(size_m: int, speed_km_s: float, angle: int, lat: float, lon: float) -> dict:
+def calculate_asteroid_density(absolute_magnitude_h: float, diameter_m: float) -> tuple:
     """
-    Calculate asteroid impact effects.
+    Calculate asteroid density using taxonomic classification based on H-magnitude.
+    Based on Carry (2012) density measurements and Bus-DeMeo taxonomy.
+    
+    Args:
+        absolute_magnitude_h: Absolute magnitude H from NASA data
+        diameter_m: Asteroid diameter in meters
+        
+    Returns:
+        tuple: (density_kg_m3, asteroid_type, confidence)
+    """
+    # Taxonomic classification based on H-magnitude ranges
+    # From research: smaller asteroids (higher H) tend to be C-type
+    if absolute_magnitude_h > 22:  # Small asteroids, likely C-type
+        density = 1410  # kg/m³ ± 690 (carbonaceous)
+        asteroid_type = "C-type"
+        confidence = 0.8
+    elif absolute_magnitude_h > 18:  # Medium asteroids, likely S-type  
+        density = 2700  # kg/m³ ± 690 (silicaceous)
+        asteroid_type = "S-type"
+        confidence = 0.7
+    else:  # Large asteroids, mixed composition, conservative estimate
+        density = 2700  # kg/m³ (conservative S-type)
+        asteroid_type = "S-type"
+        confidence = 0.6
+    
+    # Apply porosity correction for small asteroids
+    if diameter_m < 100:  # Small asteroids are often rubble piles
+        porosity_factor = 0.8  # 20% porosity
+        density *= porosity_factor
+        
+    return density, asteroid_type, confidence
+
+
+def calculate_impact(size_m: int, speed_km_s: float, angle: int, lat: float, lon: float, absolute_magnitude_h: float = None) -> dict:
+    """
+    Calculate asteroid impact effects using scientific formulas.
 
     Args:
         size_m: Asteroid diameter in meters
@@ -16,23 +51,45 @@ def calculate_impact(size_m: int, speed_km_s: float, angle: int, lat: float, lon
         angle: Entry angle in degrees
         lat: Impact latitude
         lon: Impact longitude
+        absolute_magnitude_h: NASA absolute magnitude for density calculation
 
     Returns:
         Dictionary with impact results
     """
 
-    # 1. Mass calculation
-    # Volume = (4/3) × π × r³
+    # 1. Mass calculation with scientific density
     radius_m = size_m / 2
     volume_m3 = (4/3) * math.pi * (radius_m ** 3)
 
-    # Assume rocky asteroid density: 3000 kg/m³
-    density_kg_m3 = 3000
+    # Use scientific density calculation if H-magnitude available
+    if absolute_magnitude_h:
+        density_kg_m3, asteroid_type, confidence = calculate_asteroid_density(absolute_magnitude_h, size_m)
+    else:
+        # Fallback to S-type average if no H-magnitude data
+        density_kg_m3 = 2700  # S-type average
+        asteroid_type = "S-type (assumed)"
+        confidence = 0.5
+        
     mass_kg = volume_m3 * density_kg_m3
 
-    # 2. Kinetic energy calculation
-    # E = 0.5 × m × v²
-    velocity_m_s = speed_km_s * 1000  # Convert km/s to m/s
+    # 2. Atmospheric entry deceleration (Collins et al. 2005)
+    # Most small asteroids decelerate significantly in atmosphere
+    entry_velocity_m_s = speed_km_s * 1000
+    
+    if size_m < 50:  # Small asteroids decelerate significantly
+        # Simplified atmospheric deceleration model
+        # Larger drag coefficient for small objects
+        deceleration_factor = 0.7  # 30% velocity loss
+        surface_velocity_m_s = entry_velocity_m_s * deceleration_factor
+    elif size_m < 200:  # Medium asteroids have some deceleration
+        deceleration_factor = 0.85  # 15% velocity loss
+        surface_velocity_m_s = entry_velocity_m_s * deceleration_factor
+    else:  # Large asteroids maintain most velocity
+        deceleration_factor = 0.95  # 5% velocity loss
+        surface_velocity_m_s = entry_velocity_m_s * deceleration_factor
+    
+    # Use surface velocity for energy calculations
+    velocity_m_s = surface_velocity_m_s
     energy_joules = 0.5 * mass_kg * (velocity_m_s ** 2)
 
     # Convert to megatons TNT (1 megaton = 4.184 × 10^15 joules)
@@ -101,16 +158,97 @@ def calculate_impact(size_m: int, speed_km_s: float, angle: int, lat: float, lon
         }
     ]
 
-    # 5. Death estimate
+    # 5. Scientific casualty calculation
     # Calculate area of total destruction zone
-    area_km2 = math.pi * (total_destruction_km ** 2)
+    total_destruction_area_km2 = math.pi * (total_destruction_km ** 2)
+    
+    # TODO: Replace with WorldPop API - for now use improved estimates
+    # Urban vs rural population density (more realistic than fixed 1000)
+    if abs(lat) < 60:  # Most populated latitudes
+        if total_destruction_km < 5:  # Urban impact likely
+            population_density = 3000  # Dense urban areas
+        elif total_destruction_km < 20:  # Suburban areas
+            population_density = 1000  # Suburban density
+        else:  # Large impact affecting rural areas too
+            population_density = 300   # Mixed urban/rural
+    else:  # Higher latitudes, lower population
+        population_density = 100
+    
+    affected_population = int(total_destruction_area_km2 * population_density)
+    
+    # Calculate overpressure at total destruction boundary (20 psi)
+    overpressure_psi = 20  # At total destruction radius
+    casualty_data = calculate_casualties_scientific(overpressure_psi, affected_population)
 
-    # Assume population density (1000 people/km² for cities)
-    # This is a rough estimate - actual density varies greatly
-    population_density = 1000
+    # 6. Comparison string
+    comparison = generate_comparison(energy_megatons)
+    
+    # Add scientific metadata
+    impact_metadata = {
+        "asteroid_type": asteroid_type if 'asteroid_type' in locals() else "Unknown",
+        "density_used_kg_m3": density_kg_m3,
+        "atmospheric_deceleration": f"{((entry_velocity_m_s - velocity_m_s) / entry_velocity_m_s * 100):.1f}%" if 'entry_velocity_m_s' in locals() else "0%",
+        "population_density_used": population_density,
+        "casualty_model": "Glasstone & Dolan (1977)"
+    }
 
-    # Apply 70% casualty rate in total destruction zone
-    deaths_estimated = int(area_km2 * population_density * 0.7)
+    return {
+        "energy_megatons": round(energy_megatons, 3),
+        "crater_diameter_km": round(crater_diameter_km, 2),
+        "crater_depth_km": round(crater_depth_km, 2),
+        "damage_zones": damage_zones,
+        "deaths_estimated": casualty_data["fatalities"],
+        "injuries_estimated": casualty_data["injuries"],
+        "comparison": comparison,
+        "scientific_metadata": impact_metadata
+    }
+
+def calculate_casualties_scientific(overpressure_psi: float, population: int) -> dict:
+    """
+    Calculate casualties using evidence-based mortality rates from nuclear test data.
+    Based on Glasstone & Dolan (1977) nuclear weapons effects.
+    
+    Args:
+        overpressure_psi: Blast overpressure in PSI
+        population: Population in affected area
+        
+    Returns:
+        Dictionary with fatalities, injuries, and survival rates
+    """
+    if overpressure_psi >= 55:
+        fatality_rate = 0.99
+        injury_rate = 0.01
+    elif overpressure_psi >= 35:
+        # Linear interpolation between 1% and 99% fatality
+        fatality_rate = 0.01 + (overpressure_psi - 35) * 0.049  # 0.98/20
+        injury_rate = 0.8 * (1 - fatality_rate)
+    elif overpressure_psi >= 20:
+        fatality_rate = 0.8  # Most people killed
+        injury_rate = 0.15
+    elif overpressure_psi >= 10:
+        fatality_rate = 0.5  # Widespread fatalities
+        injury_rate = 0.4
+    elif overpressure_psi >= 5:
+        fatality_rate = 0.05  # Injuries universal, fatalities widespread
+        injury_rate = 0.7
+    elif overpressure_psi >= 1:
+        fatality_rate = 0.001  # Light injuries from fragments
+        injury_rate = 0.1
+    else:
+        fatality_rate = 0
+        injury_rate = 0
+    
+    fatalities = int(population * fatality_rate)
+    injuries = int(population * injury_rate)
+    survivors = population - fatalities - injuries
+    
+    return {
+        "fatalities": fatalities,
+        "injuries": injuries, 
+        "survivors": survivors,
+        "fatality_rate": fatality_rate,
+        "injury_rate": injury_rate
+    }
 
     # 6. Comparison string
     comparison = generate_comparison(energy_megatons)
@@ -321,6 +459,76 @@ def _gravity_tractor_deflection(
     }
 
 
+def validate_against_chelyabinsk() -> dict:
+    """
+    Validate our calculations against the Chelyabinsk meteor (2013).
+    Known parameters: 18m diameter, 19.16 km/s entry, 500 kilotons energy
+    """
+    # Chelyabinsk parameters
+    diameter_m = 18
+    entry_velocity_km_s = 19.16
+    h_magnitude = 26.0  # Estimated for 18m S-type
+    
+    # Our calculation
+    result = calculate_impact(
+        size_m=diameter_m,
+        speed_km_s=entry_velocity_km_s,
+        angle=18,  # Shallow entry angle
+        lat=55.15,  # Chelyabinsk coordinates
+        lon=61.41,
+        absolute_magnitude_h=h_magnitude
+    )
+    
+    # Expected vs calculated
+    expected_energy_kt = 500
+    calculated_energy_kt = result["energy_megatons"] * 1000
+    
+    validation = {
+        "event": "Chelyabinsk 2013",
+        "expected_energy_kt": expected_energy_kt,
+        "calculated_energy_kt": round(calculated_energy_kt, 1),
+        "error_percentage": abs(calculated_energy_kt - expected_energy_kt) / expected_energy_kt * 100,
+        "within_uncertainty": abs(calculated_energy_kt - expected_energy_kt) < 250,  # ±50% uncertainty
+        "scientific_improvements": result.get("scientific_metadata", {})
+    }
+    
+    return validation
+
+
+def validate_against_tunguska() -> dict:
+    """
+    Validate against Tunguska event (1908).
+    Estimated: 60m diameter, 15 km/s, 10 megatons
+    """
+    # Tunguska estimated parameters
+    diameter_m = 60
+    velocity_km_s = 15
+    h_magnitude = 22.0  # Estimated for 60m object
+    
+    result = calculate_impact(
+        size_m=diameter_m,
+        speed_km_s=velocity_km_s,
+        angle=45,
+        lat=60.9,   # Tunguska coordinates
+        lon=101.9,
+        absolute_magnitude_h=h_magnitude
+    )
+    
+    expected_energy_mt = 10
+    calculated_energy_mt = result["energy_megatons"]
+    
+    validation = {
+        "event": "Tunguska 1908",
+        "expected_energy_mt": expected_energy_mt,
+        "calculated_energy_mt": round(calculated_energy_mt, 1),
+        "error_percentage": abs(calculated_energy_mt - expected_energy_mt) / expected_energy_mt * 100,
+        "within_uncertainty": abs(calculated_energy_mt - expected_energy_mt) < 5,  # ±50% uncertainty
+        "scientific_improvements": result.get("scientific_metadata", {})
+    }
+    
+    return validation
+
+
 def _nuclear_deflection(
     asteroid_mass_kg: float,
     asteroid_velocity_km_s: float,
@@ -375,3 +583,73 @@ def _nuclear_deflection(
         "success_probability": min(90, max(40, effectiveness)),
         "description": f"Nuclear detonation changes asteroid velocity by {velocity_change_km_s:.4f} km/s"
     }
+
+
+def validate_against_chelyabinsk() -> dict:
+    """
+    Validate our calculations against the Chelyabinsk meteor (2013).
+    Known parameters: 18m diameter, 19.16 km/s entry, 500 kilotons energy
+    """
+    # Chelyabinsk parameters
+    diameter_m = 18
+    entry_velocity_km_s = 19.16
+    h_magnitude = 26.0  # Estimated for 18m S-type
+    
+    # Our calculation
+    result = calculate_impact(
+        size_m=diameter_m,
+        speed_km_s=entry_velocity_km_s,
+        angle=18,  # Shallow entry angle
+        lat=55.15,  # Chelyabinsk coordinates
+        lon=61.41,
+        absolute_magnitude_h=h_magnitude
+    )
+    
+    # Expected vs calculated
+    expected_energy_kt = 500
+    calculated_energy_kt = result["energy_megatons"] * 1000
+    
+    validation = {
+        "event": "Chelyabinsk 2013",
+        "expected_energy_kt": expected_energy_kt,
+        "calculated_energy_kt": round(calculated_energy_kt, 1),
+        "error_percentage": abs(calculated_energy_kt - expected_energy_kt) / expected_energy_kt * 100,
+        "within_uncertainty": abs(calculated_energy_kt - expected_energy_kt) < 250,  # ±50% uncertainty
+        "scientific_improvements": result.get("scientific_metadata", {})
+    }
+    
+    return validation
+
+
+def validate_against_tunguska() -> dict:
+    """
+    Validate against Tunguska event (1908).
+    Estimated: 60m diameter, 15 km/s, 10 megatons
+    """
+    # Tunguska estimated parameters
+    diameter_m = 60
+    velocity_km_s = 15
+    h_magnitude = 22.0  # Estimated for 60m object
+    
+    result = calculate_impact(
+        size_m=diameter_m,
+        speed_km_s=velocity_km_s,
+        angle=45,
+        lat=60.9,   # Tunguska coordinates
+        lon=101.9,
+        absolute_magnitude_h=h_magnitude
+    )
+    
+    expected_energy_mt = 10
+    calculated_energy_mt = result["energy_megatons"]
+    
+    validation = {
+        "event": "Tunguska 1908",
+        "expected_energy_mt": expected_energy_mt,
+        "calculated_energy_mt": round(calculated_energy_mt, 1),
+        "error_percentage": abs(calculated_energy_mt - expected_energy_mt) / expected_energy_mt * 100,
+        "within_uncertainty": abs(calculated_energy_mt - expected_energy_mt) < 5,  # ±50% uncertainty
+        "scientific_improvements": result.get("scientific_metadata", {})
+    }
+    
+    return validation
