@@ -32,12 +32,24 @@ app = FastAPI(
     default_response_class=PrettyJSONResponse
 )
 
-# CORS middleware - allow all origins for hackathon
+# CORS middleware - Configure for production
+allowed_origins = [
+    "http://localhost:3000",  # Local development
+    "http://localhost:5173",  # Vite dev server
+    "http://localhost:4173",  # Vite preview
+    "https://astro-nuts-nasa-space-apps.vercel.app",  # Your Vercel domain
+    "https://*.vercel.app",  # All Vercel preview deployments
+]
+
+# In development, allow all origins
+if os.getenv("ENVIRONMENT") == "development":
+    allowed_origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
