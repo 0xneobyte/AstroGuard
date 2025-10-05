@@ -1,114 +1,80 @@
-# 🌍 ASTROGUARD - Near-Earth Asteroid Threat Assessment System
+# AstroGuard - Near-Earth Asteroid Threat Assessment System
+
+**NASA Space Apps Challenge 2024 Submission**
 
 ## Overview
-ASTROGUARD is a comprehensive asteroid threat assessment and visualization platform that combines NASA's Near-Earth Object data with AI-powered analysis and 3D visualization capabilities.
 
-## Features
+AstroGuard is a scientifically accurate asteroid impact assessment platform that transforms NASA's Near-Earth Object data into actionable threat intelligence. Built during the NASA Space Apps hackathon, this system provides real-time asteroid tracking, precise impact simulations, and comprehensive threat visualization capabilities.
 
-### 🎯 Core Features
-- **Real-Time Asteroid Tracking**: Browse real and simulated potentially hazardous asteroids
-- **Impact Simulation**: Calculate and visualize potential impact zones and damage
-- **3D Visualization**: Interactive SpaceKit-powered 3D models and simulations
-- **Mitigation Strategies**: Analyze kinetic impactor deflection scenarios
-- **AI Chatbot**: GPT-4o-mini powered assistant for asteroid threat analysis
+## Key Features
 
-### 🤖 AI Assistant
-- Context-aware Q&A about asteroid threats
-- Automatic threat summary generation
-- Real-time conversation about impact scenarios
-- Mitigation strategy recommendations
+### Scientific Accuracy
+- **NASA-Grade Physics**: Implements Collins crater scaling laws and peer-reviewed impact formulas
+- **Real Population Data**: Integrates WorldPop API for accurate casualty estimates
+- **Atmospheric Modeling**: Accounts for atmospheric entry deceleration effects
+- **Historical Validation**: Validated against Tunguska (1908) and Chelyabinsk (2013) events
+
+### Visualization & Analysis
+- **3D Space Visualization**: Interactive orbital trajectories using SpaceKit.js
+- **Impact Zone Mapping**: Geographic visualization of blast zones and crater formation
+- **Real-Time NEO Data**: Live asteroid tracking from NASA's Small-Body Database
+- **Multiple Asteroid Loading**: Simultaneous visualization of current NEO threats
+
+### AI-Powered Assistance
+- **Threat Analysis**: Context-aware AI assistant for impact scenario evaluation
+- **Automatic Summarization**: Generate detailed threat assessments
+- **Mitigation Planning**: Analysis of deflection strategies and intervention timelines
 
 ## Quick Start
 
 ### Prerequisites
 - Python 3.10+
 - Node.js 18+
-- OpenAI API Key (for AI chatbot)
+- OpenAI API Key (optional, for AI features)
 
-### Local Development
+### Installation
 
-#### Backend
+#### Backend Setup
 ```bash
 cd backend
 python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-# Create .env file
+# Configure environment variables
 echo "NASA_API_KEY=DEMO_KEY" > .env
-echo "OPENAI_API_KEY=your_key_here" >> .env
+echo "OPENAI_API_KEY=your_openai_key" >> .env
 
 python main.py
 ```
 
-Backend runs on: http://localhost:5000
+Backend available at: `http://localhost:5000`
 
-#### Frontend
+#### Frontend Setup
 ```bash
 cd frontend
 npm install
 
-# Create .env file
+# Configure API endpoint
 echo "VITE_API_URL=http://localhost:5000" > .env
 
 npm run dev
 ```
 
-Frontend runs on: http://localhost:5173
+Frontend available at: `http://localhost:5173`
 
-## 🚀 Production Deployment
+## Architecture
 
-### DigitalOcean Deployment (Recommended)
+### Backend (FastAPI)
+- **physics.py**: Scientific impact calculations and Collins crater scaling
+- **main.py**: REST API endpoints and AI integration
+- **External APIs**: NASA NEO Database, WorldPop population data
 
-We provide a complete deployment guide and automated setup script for DigitalOcean.
-
-**Quick Deploy:**
-```bash
-# On your DigitalOcean droplet
-wget https://raw.githubusercontent.com/yourusername/AstroNuts-Nasa-Space-Apps/main/deploy.sh
-chmod +x deploy.sh
-./deploy.sh
-```
-
-**Manual Setup:**
-See [DIGITALOCEAN_DEPLOYMENT.md](DIGITALOCEAN_DEPLOYMENT.md) for detailed instructions.
-
-### Environment Variables
-
-#### Frontend (.env.production)
-```bash
-VITE_API_URL=https://yourdomain.com  # Or http://your-droplet-ip:5000
-```
-
-#### Backend (.env)
-```bash
-NASA_API_KEY=DEMO_KEY
-OPENAI_API_KEY=sk-proj-your-key-here
-```
-
-## Project Structure
-
-```
-AstroNuts-Nasa-Space-Apps/
-├── backend/              # FastAPI backend
-│   ├── main.py          # API endpoints + AI integration
-│   ├── physics.py       # Impact & deflection calculations
-│   └── requirements.txt
-├── frontend/            # React + Vite frontend
-│   ├── src/
-│   │   ├── components/  # React components
-│   │   │   ├── AIChatbot.jsx      # AI assistant
-│   │   │   ├── MapView.jsx        # Leaflet map
-│   │   │   ├── Sidebar.jsx        # Navigation
-│   │   │   └── SpacekitView.jsx   # 3D visualization
-│   │   ├── services/
-│   │   │   └── api.js   # API client
-│   │   └── store/
-│   │       └── useStore.js # Zustand state management
-│   └── spacekit/        # SpaceKit.js demos
-├── deploy.sh            # Automated deployment script
-└── DIGITALOCEAN_DEPLOYMENT.md  # Deployment guide
-```
+### Frontend (React + Vite)
+- **SpacekitView**: 3D orbital visualization and asteroid rendering
+- **MapView**: Geographic impact visualization using Leaflet
+- **AIChatbot**: OpenAI-powered threat analysis assistant
+- **Sidebar**: Control panel for asteroid selection and simulation parameters
 
 ## API Endpoints
 
